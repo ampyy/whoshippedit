@@ -1,0 +1,190 @@
+@{
+    ViewData["Title"] = "Directory";
+
+    // Realistic SaaS Data
+    var realData = new[] {
+        new { Name = "Cursor", Desc = "The AI Code Editor. Built to make you extraordinarily productive.", Founder = "Aman Sanger", Cat = "Developer Tools", Status = "Verified", Mrr = "$1M+ MRR", Build = 94, Upvotes = 342, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
+        new { Name = "Resend", Desc = "Email for developers. The best API to reach humans instead of spam folders.", Founder = "Zeno Rocha", Cat = "Developer Tools", Status = "Verified", Mrr = "$1M+ MRR", Build = 88, Upvotes = 289, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
+        new { Name = "PostHog", Desc = "The single platform to analyze, test, observe, and deploy new features.", Founder = "James Hawkins", Cat = "Analytics", Status = "Verified", Mrr = "$1M+ MRR", Build = 91, Upvotes = 412, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
+        new { Name = "Beehiiv", Desc = "The newsletter platform built for growth. Everything you need to scale.", Founder = "Tyler Denk", Cat = "Marketing", Status = "Verified", Mrr = "$1M+ MRR", Build = 85, Upvotes = 301, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
+        new { Name = "Tally", Desc = "The simplest way to create forms. 99% of features are free.", Founder = "Marie Martens", Cat = "Productivity", Status = "Verified", Mrr = "$100k-$1M MRR", Build = 82, Upvotes = 195, MrrClass = "bg-mrr-100k-bg text-verified-text border-verified-border" },
+        new { Name = "Cal.com", Desc = "The open source Calendly alternative. You are in control of your own data.", Founder = "Peer Richelsen", Cat = "Productivity", Status = "Verified", Mrr = "$100k-$1M MRR", Build = 87, Upvotes = 243, MrrClass = "bg-mrr-100k-bg text-verified-text border-verified-border" },
+        new { Name = "Clerk", Desc = "More than authentication. Complete user management for React, Next.js, and the Modern Web.", Founder = "Colin Sidoti", Cat = "Developer Tools", Status = "Verified", Mrr = "$1M+ MRR", Build = 89, Upvotes = 320, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
+        new { Name = "LemonSqueezy", Desc = "Payments, tax & subscriptions for software companies. A merchant of record.", Founder = "Orman Clark", Cat = "Finance", Status = "Tentative", Mrr = "$100k-$1M MRR", Build = 76, Upvotes = 188, MrrClass = "bg-mrr-100k-bg text-verified-text border-verified-border" },
+        new { Name = "Midjourney", Desc = "An independent research lab exploring new mediums of thought and expanding the imaginative powers of the human species.", Founder = "David Holz", Cat = "AI", Status = "Tentative", Mrr = "$1M+ MRR", Build = 95, Upvotes = 512, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
+        new { Name = "Supabase", Desc = "The open source Firebase alternative. Start your project with a Postgres database.", Founder = "Paul Copplestone", Cat = "Developer Tools", Status = "Verified", Mrr = "$1M+ MRR", Build = 92, Upvotes = 405, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" }
+    };
+    
+    var dummyProducts = Enumerable.Range(0, 100).Select(i => {
+        var p = realData[i % realData.Length];
+        return new {
+            Id = i + 1,
+            Name = p.Name, Description = p.Desc, Founder = p.Founder, Category = p.Cat, 
+            Status = p.Status, Mrr = p.Mrr, Build = p.Build, Upvotes = p.Upvotes, MrrClass = p.MrrClass,
+            Initials = p.Name.Substring(0, 1)
+        };
+    }).ToList();
+    
+    var categories = ViewBag.Categories as List<whoshippedit.Models.Category> ?? new List<whoshippedit.Models.Category>();
+}
+
+<!-- Directory Section (Without Hero) -->
+<div class="w-full max-w-[1100px] mx-auto px-0 md:px-6 mt-12 mb-16 flex flex-col">
+    
+    <!-- Header for Directory Page -->
+    <div class="mb-8 px-4 md:px-0">
+        <h1 class="text-3xl font-medium text-primary tracking-tight">Directory</h1>
+        <p class="text-secondary mt-2">Explore 2,400+ verified SaaS products.</p>
+    </div>
+
+    <!-- Unified Table Container (Search + List) -->
+    <div class="flex flex-col bg-surface border-y md:border md:border-medium rounded-none shadow-sm w-full">
+        
+        <!-- Search & Filter Header -->
+        <div class="p-4 border-b border-medium flex flex-col gap-4 animate-slide-down" style="opacity: 0;">
+            <!-- Search Input -->
+            <div class="relative w-full h-10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" placeholder="Search 2,400+ products..." class="w-full h-full bg-surface border border-default rounded-lg pl-9 pr-4 text-sm text-primary placeholder-tertiary focus:outline-none focus:border-medium transition-colors" />
+            </div>
+
+            <!-- Filters -->
+            <div class="flex overflow-x-auto hide-scrollbar gap-2 md:grid md:grid-cols-4 w-full">
+                <select class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer relative transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
+                    <option value="">Category</option>
+                    @foreach (var cat in categories)
+                    {
+                        <option value="@cat.Slug">@cat.Name</option>
+                    }
+                </select>
+                
+                <select class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
+                    <option value="">Revenue</option>
+                    <option value="0">Idea</option>
+                    <option value="1k">$0-$1k MRR</option>
+                    <option value="10k">$1k-$10k MRR</option>
+                    <option value="100k">$10k-$100k MRR</option>
+                    <option value="1m">$100k-$1M MRR</option>
+                    <option value="big">$1M+ MRR</option>
+                </select>
+
+                <select class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
+                    <option value="">Stage</option>
+                    <option value="tentative">Tentative</option>
+                    <option value="validated">Validated</option>
+                    <option value="growing">Growing</option>
+                    <option value="established">Established</option>
+                </select>
+
+                <select class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
+                    <option value="latest">Sort: Latest</option>
+                    <option value="trending">Trending</option>
+                    <option value="mrr">Highest MRR</option>
+                    <option value="upvotes">Most Upvoted</option>
+                    <option value="score">Highest Build Score</option>
+                </select>
+            </div>
+
+            <!-- Results Summary Row -->
+            <div class="flex items-center justify-between pt-3 border-t border-default mt-1">
+                <span class="text-13 text-primary font-medium px-1">Showing 100 of 2,436 products</span>
+                <span class="text-12 text-tertiary px-1">Updated daily</span>
+            </div>
+        </div>
+
+        <!-- Product List -->
+        <div class="flex flex-col">
+            @foreach (var prod in dummyProducts)
+            {
+                <div class="group flex items-start gap-3.5 px-4 md:px-5 py-4 md:py-3 border-b border-medium last:border-b-0 hover:bg-hover transition-colors cursor-pointer animate-fade-up" style="opacity: 0; animation-delay: @(Math.Min(prod.Id, 15) * 40)ms;">
+                
+                <!-- Logo -->
+                <div class="w-8 h-8 md:w-9 md:h-9 shrink-0 bg-subtle border border-medium rounded-md flex items-center justify-center text-base md:text-lg font-medium text-primary mt-0.5">
+                    @prod.Initials
+                </div>
+
+                <!-- Info Column -->
+                <div class="flex flex-col flex-1 min-w-0">
+                    
+                    <!-- 1. Name & Badges Row (Merged to save height) -->
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
+                        <h3 class="text-base md:text-lg font-semibold text-primary truncate mr-1">@prod.Name</h3>
+                        
+                        @if (prod.Status == "Verified")
+                        {
+                            <span class="inline-flex items-center gap-1 px-1.5 py-[1px] rounded bg-verified-bg text-verified-text border border-verified-border text-10 uppercase font-semibold tracking-wide">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                Verified
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="px-1.5 py-[1px] rounded bg-subtle text-secondary border border-default text-10 uppercase font-semibold tracking-wide">
+                                Tentative
+                            </span>
+                        }
+                        
+                        <span class="px-1.5 py-[1px] rounded border text-10 uppercase font-semibold tracking-wide @prod.MrrClass">
+                            @prod.Mrr
+                        </span>
+
+                        <span class="px-1.5 py-[1px] rounded bg-subtle text-secondary border border-default text-10 uppercase font-semibold tracking-wide">
+                            @prod.Category
+                        </span>
+                    </div>
+
+                    <!-- 2. Description -->
+                    <p class="text-13 md:text-14 text-primary/80 line-clamp-1 md:line-clamp-2 leading-snug mb-1.5 max-w-[800px]">@prod.Description</p>
+                    
+                    <!-- 3. Metadata & Metrics Row -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 mt-auto">
+                        <div class="text-11 md:text-12 text-tertiary font-medium">
+                            by @prod.Founder
+                        </div>
+                        
+                        <div class="flex items-center gap-2 text-11 md:text-12 text-tertiary font-medium">
+                            <span>@prod.Build% would build</span>
+                            <span class="text-border-medium">•</span>
+                            <span class="flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+                                @prod.Upvotes
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Load More -->
+    <div class="flex justify-center mt-8 animate-fade-up" style="opacity: 0; animation-delay: 600ms;">
+        <button class="px-6 py-2.5 bg-primary text-page rounded-sm text-13 font-medium hover:opacity-90 transition-opacity">
+            Load more products
+        </button>
+    </div>
+
+</div> <!-- Closes Unified Table Container -->
+</div> <!-- Closes Main Container -->
+
+<style>
+    /* Hide scrollbar for mobile filters */
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Directory Page Entrance Animations */
+    @@keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @@keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-slide-down {
+        animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .animate-fade-up {
+        animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+</style>

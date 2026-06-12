@@ -1,0 +1,25 @@
+{
+  "name": "whoshippedit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "npx tailwindcss -i ./wwwroot/css/input.css -o ./wwwroot/css/site.css",
+    "watch:css": "npx tailwindcss -i ./wwwroot/css/input.css -o ./wwwroot/css/site.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ampyy/whoshippedit.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ampyy/whoshippedit/issues"
+  },
+  "homepage": "https://github.com/ampyy/whoshippedit#readme",
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  }
+}

@@ -1,0 +1,489 @@
+@model whoshippedit.Models.Idea
+@{
+    ViewData["Title"] = Model.Title;
+    var userVote = ViewBag.UserVote as short?;
+    var hasVoted = userVote.HasValue;
+    
+    var totalVotes = Model.TotalVotes;
+    double pYes = totalVotes > 0 ? (double)Model.VoteYes / totalVotes * 100 : 0;
+    double pMaybe = totalVotes > 0 ? (double)Model.VoteMaybe / totalVotes * 100 : 0;
+    double pNo = totalVotes > 0 ? (double)Model.VoteNo / totalVotes * 100 : 0;
+    
+    double payPercentage = totalVotes > 0 ? (double)(Model.VoteYes + Model.VoteMaybe) / totalVotes * 100 : 0;
+    
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+
+    var comments = ViewBag.Comments as List<whoshippedit.Models.Comment> ?? new List<whoshippedit.Models.Comment>();
+    var topLevelComments = comments.Where(c => c.ParentId == null).OrderByDescending(c => c.CreatedAt).ToList();
+
+    string FormatRelativeTime(DateTime dt)
+    {
+        var span = DateTime.UtcNow - dt.ToUniversalTime();
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+        return dt.ToString("MMM d, yyyy");
+    }
+}
+
+<div class="w-full max-w-[700px] mx-auto px-6 mt-16 mb-32 flex flex-col">
+    
+    <!-- HEADER & AUTHOR -->
+    <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-3">
+            <span class="px-2.5 py-1 rounded-md bg-subtle text-secondary border border-default text-11 uppercase font-medium tracking-wider">
+                SaaS Idea
+            </span>
+            <span class="text-12 text-tertiary font-medium">@Model.CreatedAt.ToString("MMM d, yyyy")</span>
+        </div>
+        
+        <h1 class="text-22 font-medium text-primary tracking-tight mt-2 leading-tight">@Model.Title</h1>
+        
+        <div class="flex items-center justify-between mt-4 pb-6 border-b border-default">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-subtle border border-default flex items-center justify-center text-12 font-medium text-primary uppercase">
+                    @(string.IsNullOrEmpty(Model.FounderName) ? "U" : Model.FounderName.Substring(0, 1))
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-13 font-medium text-primary">@Model.FounderName</span>
+                    <span class="text-12 text-secondary">Submitted this idea</span>
+                </div>
+            </div>
+            
+            <button id="shareBtn" onclick="copyShareText()" class="px-4 py-2 rounded-md border border-default bg-surface hover:bg-hover hover:border-medium text-12 text-primary font-medium transition-all flex items-center gap-2 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect></svg>
+                <span id="shareText">Share</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- DETAILS - SINGLE COLUMN -->
+    <div class="flex flex-col gap-6 py-8 border-b border-default">
+        <div class="flex flex-col">
+            <h3 class="text-11 uppercase tracking-wider text-tertiary font-medium mb-2">The Problem</h3>
+            <p class="text-13 text-primary leading-relaxed bg-surface border border-default p-4 rounded-md">@Model.Problem</p>
+        </div>
+        
+        <div class="flex flex-col">
+            <h3 class="text-11 uppercase tracking-wider text-tertiary font-medium mb-2">Who Pays?</h3>
+            <p class="text-13 text-primary font-medium bg-surface border border-default p-4 rounded-md">@(string.IsNullOrWhiteSpace(Model.TargetCustomer) ? "Not specified" : Model.TargetCustomer)</p>
+        </div>
+        
+        <div class="flex flex-col">
+            <h3 class="text-11 uppercase tracking-wider text-tertiary font-medium mb-2">Proposed Price</h3>
+            <div class="w-fit bg-subtle border border-default px-3 py-1 rounded-md text-12 text-primary font-medium">
+                @(string.IsNullOrWhiteSpace(Model.ProposedPrice) ? "Not specified" : Model.ProposedPrice)
+            </div>
+        </div>
+    </div>
+
+    <!-- THE VOTE SECTION -->
+    <div class="py-10 border-b border-default">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-18 font-medium text-primary tracking-tight">Would you use this?</h3>
+            <div class="text-12 text-secondary font-medium">
+                <span class="text-primary">@totalVotes</span> votes &middot; <span class="text-primary">@Model.BuildingCount</span> building
+            </div>
+        </div>
+        
+        @if (!hasVoted)
+        {
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="vote-grid">
+                <button onclick="submitVote(0)" class="bg-surface border border-default hover:border-medium hover:bg-hover rounded-md p-5 text-center transition-all group">
+                    <div class="text-[20px] mb-2 group-hover:scale-110 transition-transform">💰</div>
+                    <div class="text-13 font-medium text-primary">Yes, I'd pay/use it</div>
+                </button>
+                <button onclick="submitVote(1)" class="bg-surface border border-default hover:border-medium hover:bg-hover rounded-md p-5 text-center transition-all group">
+                    <div class="text-[20px] mb-2 group-hover:scale-110 transition-transform">🤔</div>
+                    <div class="text-13 font-medium text-primary">Maybe, depends</div>
+                </button>
+                <button onclick="submitVote(2)" class="bg-surface border border-default hover:border-medium hover:bg-hover rounded-md p-5 text-center transition-all group">
+                    <div class="text-[20px] mb-2 grayscale opacity-50 group-hover:scale-110 group-hover:grayscale-0 group-hover:opacity-100 transition-all">👎</div>
+                    <div class="text-13 font-medium text-secondary">No, wouldn't use</div>
+                </button>
+            </div>
+            
+            <div class="mt-4 flex justify-between items-center">
+                <button onclick="submitVote(3)" class="py-2.5 px-4 rounded-md text-12 font-medium text-secondary hover:text-primary hover:bg-surface transition-all flex items-center gap-2">
+                    <span>🔨</span> I'm building this
+                </button>
+                
+                @if (!isAuthenticated)
+                {
+                    <a href="/auth/login?returnUrl=/validate/@Model.Slug" class="text-12 font-medium text-accent hover:underline">Sign in to vote &rarr;</a>
+                }
+            </div>
+        }
+        else
+        {
+            <!-- RESULTS VIEW -->
+            <div class="bg-surface border border-default rounded-md p-8">
+                <!-- Large Stacked Bar using Design Tokens -->
+                <div class="w-full h-3 rounded-full overflow-hidden flex mb-8 bg-subtle">
+                    @if (pYes > 0)   { <div style="width: @pYes%" class="bg-[var(--verified)] h-full"></div> }
+                    @if (pMaybe > 0) { <div style="width: @pMaybe%" class="bg-[var(--accent)] h-full"></div> }
+                    @if (pNo > 0)    { <div style="width: @pNo%" class="bg-[var(--text-tertiary)] h-full"></div> }
+                </div>
+                
+                <!-- 3 Column Breakdown -->
+                <div class="grid grid-cols-3 gap-4 text-center divide-x divide-default">
+                    <div class="flex flex-col px-2">
+                        <span class="text-22 font-medium text-primary tracking-tight">@Math.Round(pYes)%</span>
+                        <span class="text-11 font-medium text-tertiary uppercase tracking-wider mt-1">Yes</span>
+                    </div>
+                    <div class="flex flex-col px-2">
+                        <span class="text-22 font-medium text-primary tracking-tight">@Math.Round(pMaybe)%</span>
+                        <span class="text-11 font-medium text-tertiary uppercase tracking-wider mt-1">Maybe</span>
+                    </div>
+                    <div class="flex flex-col px-2">
+                        <span class="text-22 font-medium text-secondary tracking-tight">@Math.Round(pNo)%</span>
+                        <span class="text-11 font-medium text-tertiary uppercase tracking-wider mt-1">No</span>
+                    </div>
+                </div>
+                
+                @{
+                    string voteLabel = userVote switch {
+                        0 => "Yes",
+                        1 => "Maybe",
+                        2 => "No",
+                        3 => "I'm building this",
+                        _ => "Unknown"
+                    };
+                }
+                <div class="mt-8 pt-4 border-t border-default flex justify-between items-center">
+                    <div class="text-12 font-medium text-secondary">
+                        <span class="text-primary font-medium">@totalVotes</span> founders voted
+                    </div>
+                    <div class="text-11 font-medium px-3 py-1.5 rounded-full bg-[var(--accent-bg)] text-[var(--accent-text)] border border-[var(--accent-border)]">
+                        You voted: @voteLabel &check;
+                    </div>
+                </div>
+            </div>
+            
+            <!-- VERDICT BOX -->
+            @if (totalVotes >= 10)
+            {
+                <div class="mt-6 rounded-md p-5 @(payPercentage > 60 ? "bg-[var(--verified-bg)] border border-[var(--verified-border)] text-[var(--verified-text)]" : (payPercentage >= 40 ? "bg-[var(--featured-bg)] border border-[var(--featured-border)] text-[var(--featured-text)]" : "bg-danger-bg border border-default text-primary"))">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        @if (payPercentage > 60)
+                        {
+                            <span class="text-13 font-medium text-[var(--verified-text)]">🟢 Strong signal</span>
+                        }
+                        else if (payPercentage >= 40)
+                        {
+                            <span class="text-13 font-medium text-[var(--featured-text)]">🟡 Mixed signal</span>
+                        }
+                        else
+                        {
+                            <span class="text-13 font-medium text-secondary">🔴 Weak signal</span>
+                        }
+                    </div>
+                    <p class="text-12 leading-relaxed">
+                        @(payPercentage > 60 ? "Most founders would pay for this. High demand detected." : (payPercentage >= 40 ? "Real demand exists, but price sensitivity is a factor." : "Most founders wouldn't pay for this. Validation required."))
+                    </p>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- COMMENTS SECTION -->
+    <div class="py-10">
+        <h3 class="text-18 font-medium text-primary tracking-tight mb-6" id="comments-count" data-count="@comments.Count">Comments (@comments.Count)</h3>
+
+        @if (isAuthenticated)
+        {
+            <div class="flex flex-col gap-3 mb-10">
+                <textarea id="main-comment-input" rows="3" placeholder="What do you think about this idea?..." class="w-full p-4 rounded-md border border-default bg-surface text-13 text-primary placeholder-tertiary focus:outline-none focus:border-strong transition-all resize-none shadow-sm"></textarea>
+                <button onclick="submitComment(null)" class="self-end px-5 py-2.5 bg-primary text-page rounded-md text-13 font-medium hover:opacity-90 shadow-sm transition-all">Post comment</button>
+            </div>
+        }
+        else
+        {
+            <div class="bg-subtle rounded-md p-8 text-center mb-10 border border-default shadow-sm">
+                <p class="text-13 text-secondary mb-4">You must be signed in to join the discussion.</p>
+                <a href="/auth/login?returnUrl=/validate/@Model.Slug" class="inline-flex items-center px-5 py-2 bg-primary text-page rounded-md text-13 font-medium hover:opacity-90 transition-all shadow-sm">Sign in securely</a>
+            </div>
+        }
+
+        <div id="comments-list" class="flex flex-col gap-6">
+            @if (topLevelComments.Any())
+            {
+                @foreach (var comment in topLevelComments)
+                {
+                    <div class="flex gap-3 border-b border-default pb-6 last:border-b-0" id="comment-@comment.Id">
+                        <div class="w-8 h-8 rounded-full bg-subtle border border-default flex items-center justify-center text-12 font-bold text-primary shrink-0 uppercase">
+                            @(!string.IsNullOrEmpty(comment.UserName) ? comment.UserName.Substring(0, 1) : "A")
+                        </div>
+                        <div class="flex flex-col flex-1 gap-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-13 font-semibold text-primary">@(comment.UserName ?? "Anonymous User")</span>
+                                <span class="text-11 text-tertiary">@FormatRelativeTime(comment.CreatedAt)</span>
+                                
+                                @if (isAuthenticated)
+                                {
+                                    <button onclick="showReplyBox('@comment.Id')" class="text-11 text-secondary hover:text-primary transition-colors ml-2 font-medium">Reply</button>
+                                }
+                            </div>
+                            <p class="text-13 text-secondary leading-relaxed">@comment.Body</p>
+                            
+                            <!-- Replies -->
+                            @{
+                                var replies = comments.Where(r => r.ParentId == comment.Id).OrderBy(r => r.CreatedAt).ToList();
+                            }
+                            @if (replies.Any())
+                            {
+                                <div class="flex flex-col gap-3 mt-3 pl-4 border-l-2 border-default">
+                                    @foreach (var reply in replies)
+                                    {
+                                        <div class="flex gap-3" id="comment-@reply.Id">
+                                            <div class="w-6 h-6 rounded-full bg-subtle border border-default flex items-center justify-center text-[10px] font-bold text-primary shrink-0 uppercase">
+                                                @(!string.IsNullOrEmpty(reply.UserName) ? reply.UserName.Substring(0, 1) : "A")
+                                            </div>
+                                            <div class="flex flex-col flex-1 gap-0.5">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-12 font-semibold text-primary">@(reply.UserName ?? "Anonymous User")</span>
+                                                    @if (reply.UserId == Model.SubmittedBy)
+                                                    {
+                                                        <span class="px-1.5 py-[1px] rounded border border-default bg-subtle text-secondary text-[9px] uppercase font-bold tracking-wider">Author</span>
+                                                    }
+                                                    <span class="text-11 text-tertiary">@FormatRelativeTime(reply.CreatedAt)</span>
+                                                </div>
+                                                <p class="text-12 text-secondary leading-relaxed">@reply.Body</p>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            
+                            <!-- Inline Reply Box (Hidden by default) -->
+                            <div id="reply-box-@comment.Id" class="hidden mt-3 pl-4 border-l-2 border-default flex flex-col gap-2">
+                                <textarea id="reply-input-@comment.Id" rows="2" placeholder="Write a reply..." class="w-full p-2.5 rounded-lg border border-default bg-surface text-12 text-primary placeholder:text-tertiary focus:outline-none focus:border-strong transition-colors resize-none shadow-sm"></textarea>
+                                <div class="flex justify-end gap-2">
+                                    <button onclick="hideReplyBox('@comment.Id')" class="px-3 py-1.5 rounded-lg border border-default bg-surface hover:bg-hover text-11 font-medium text-secondary transition-colors">Cancel</button>
+                                    <button onclick="submitComment('@comment.Id')" class="px-3 py-1.5 rounded-lg bg-primary text-page hover:opacity-90 text-11 font-medium transition-colors">Reply</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div id="no-comments-placeholder" class="py-6 text-13 text-tertiary text-center italic">
+                    No comments yet. Be the first to share your feedback!
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<script>
+    function showReplyBox(commentId) {
+        const replyBox = document.getElementById(`reply-box-${commentId}`);
+        if (replyBox) {
+            replyBox.classList.remove('hidden');
+            const textarea = document.getElementById(`reply-input-${commentId}`);
+            if (textarea) textarea.focus();
+        }
+    }
+
+    function hideReplyBox(commentId) {
+        const replyBox = document.getElementById(`reply-box-${commentId}`);
+        if (replyBox) {
+            replyBox.classList.add('hidden');
+            const textarea = document.getElementById(`reply-input-${commentId}`);
+            if (textarea) textarea.value = '';
+        }
+    }
+
+    async function submitComment(parentId) {
+        const inputId = parentId ? `reply-input-${parentId}` : 'main-comment-input';
+        const textarea = document.getElementById(inputId);
+        if (!textarea) return;
+
+        const bodyText = textarea.value.trim();
+        if (!bodyText) return;
+
+        try {
+            const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (!tokenElement) {
+                alert("Verification token not found. Please refresh and try again.");
+                return;
+            }
+            const token = tokenElement.value;
+            const formData = new URLSearchParams();
+            formData.append('__RequestVerificationToken', token);
+            formData.append('body', bodyText);
+            if (parentId) {
+                formData.append('parentId', parentId);
+            }
+
+            const response = await fetch(`/validate/@Model.Slug/comment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: formData.toString()
+            });
+
+            if (response.ok) {
+                const comment = await response.json();
+                insertCommentDOM(comment);
+            } else {
+                let errText = "Failed to post comment.";
+                try {
+                    const errData = await response.json();
+                    if (errData && errData.error) {
+                        errText = errData.error;
+                    }
+                } catch(e) {}
+                alert(errText);
+            }
+        } catch (error) {
+            console.error("Error posting comment:", error);
+            alert("An unexpected error occurred while posting your comment.");
+        }
+    }
+
+    function insertCommentDOM(comment) {
+        if (comment.parentId) {
+            const parentCommentDiv = document.getElementById(`comment-${comment.parentId}`);
+            if (!parentCommentDiv) return;
+
+            const contentCol = parentCommentDiv.querySelector('.flex-col');
+            if (!contentCol) return;
+
+            const replyBoxDiv = document.getElementById(`reply-box-${comment.parentId}`);
+            
+            // Check if replies container already exists
+            let repliesDiv = contentCol.querySelector('.border-l-2');
+            if (!repliesDiv) {
+                repliesDiv = document.createElement('div');
+                repliesDiv.className = 'flex flex-col gap-3 mt-3 pl-4 border-l-2 border-default';
+                // Insert before the reply box
+                contentCol.insertBefore(repliesDiv, replyBoxDiv);
+            }
+
+            const replyHTML = `
+                <div class="flex gap-3" id="comment-${comment.id}">
+                    <div class="w-6 h-6 rounded-full bg-subtle border border-default flex items-center justify-center text-[10px] font-bold text-primary shrink-0 uppercase">
+                        ${comment.userInitial}
+                    </div>
+                    <div class="flex flex-col flex-1 gap-0.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-12 font-semibold text-primary">${escapeHtml(comment.userName)}</span>
+                            <span class="text-11 text-tertiary">${comment.createdAt}</span>
+                        </div>
+                        <p class="text-12 text-secondary leading-relaxed">${escapeHtml(comment.body)}</p>
+                    </div>
+                </div>
+            `;
+            repliesDiv.insertAdjacentHTML('beforeend', replyHTML);
+            
+            hideReplyBox(comment.parentId);
+        } else {
+            const commentsList = document.getElementById('comments-list');
+            if (!commentsList) return;
+
+            const noCommentsText = document.getElementById('no-comments-placeholder');
+            if (noCommentsText) {
+                noCommentsText.remove();
+            }
+
+            const commentHTML = `
+                <div class="flex gap-3 border-b border-default pb-6 last:border-b-0" id="comment-${comment.id}">
+                    <div class="w-8 h-8 rounded-full bg-subtle border border-default flex items-center justify-center text-12 font-bold text-primary shrink-0 uppercase">
+                        ${comment.userInitial}
+                    </div>
+                    <div class="flex flex-col flex-1 gap-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-13 font-semibold text-primary">${escapeHtml(comment.userName)}</span>
+                            <span class="text-11 text-tertiary">${comment.createdAt}</span>
+                            <button onclick="showReplyBox('${comment.id}')" class="text-11 text-secondary hover:text-primary transition-colors ml-2 font-medium">Reply</button>
+                        </div>
+                        <p class="text-13 text-secondary leading-relaxed">${escapeHtml(comment.body)}</p>
+                        
+                        <div id="reply-box-${comment.id}" class="hidden mt-3 pl-4 border-l-2 border-default flex flex-col gap-2">
+                            <textarea id="reply-input-${comment.id}" rows="2" placeholder="Write a reply..." class="w-full p-2.5 rounded-lg border border-default bg-surface text-12 text-primary placeholder:text-tertiary focus:outline-none focus:border-strong transition-colors resize-none shadow-sm"></textarea>
+                            <div class="flex justify-end gap-2">
+                                <button onclick="hideReplyBox('${comment.id}')" class="px-3 py-1.5 rounded-lg border border-default bg-surface hover:bg-hover text-11 font-medium text-secondary transition-colors">Cancel</button>
+                                <button onclick="submitComment('${comment.id}')" class="px-3 py-1.5 rounded-lg bg-primary text-page hover:opacity-90 text-11 font-medium transition-colors">Reply</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            commentsList.insertAdjacentHTML('afterbegin', commentHTML);
+            
+            const mainInput = document.getElementById('main-comment-input');
+            if (mainInput) mainInput.value = '';
+        }
+
+        // Update count badge
+        const countBadge = document.getElementById('comments-count');
+        if (countBadge) {
+            const currentCount = parseInt(countBadge.getAttribute('data-count') || '0', 10);
+            const newCount = currentCount + 1;
+            countBadge.setAttribute('data-count', newCount);
+            countBadge.innerText = `Comments (${newCount})`;
+        }
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    async function submitVote(voteType) {
+        @if (!isAuthenticated)
+        {
+            <text>
+            alert("Please sign in to vote.");
+            return;
+            </text>
+        }
+        
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const res = await fetch('/validate/@Model.Slug/vote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `__RequestVerificationToken=${token}&voteType=${voteType}`
+            });
+            
+            if (res.ok) {
+                window.location.reload();
+            } else if (res.status === 401) {
+                window.location.href = '/auth/login?returnUrl=/validate/@Model.Slug';
+            } else {
+                alert("Failed to submit vote. Please try again.");
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function copyShareText() {
+        const text = `@Math.Round(payPercentage)% of founders said they'd pay for this idea 💰\n\n@Model.Title\n\nValidate it here: ${window.location.href}`;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById("shareBtn");
+            const textSpan = document.getElementById("shareText");
+            
+            textSpan.innerText = "Copied!";
+            btn.classList.add("bg-green-500/10", "border-green-500/30", "text-green-400");
+            btn.classList.remove("bg-[var(--bg-surface)]", "text-[var(--text-primary)]");
+            
+            setTimeout(() => {
+                textSpan.innerText = "Share";
+                btn.classList.remove("bg-green-500/10", "border-green-500/30", "text-green-400");
+                btn.classList.add("bg-[var(--bg-surface)]", "text-[var(--text-primary)]");
+            }, 2000);
+        });
+    }
+</script>

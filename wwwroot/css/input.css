@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Custom Properties — Design Tokens
+   Light mode defaults, dark mode overrides
+   ============================================ */
+
+:root {
+  /* Backgrounds */
+  --bg-page:        #F7F7F5;
+  --bg-surface:     #FFFFFF;
+  --bg-hover:       #F2F2F0;
+  --bg-subtle:      #EBEBEA;
+
+  /* Text */
+  --text-primary:   #0F0F0E;
+  --text-secondary: #6B6B68;
+  --text-tertiary:  #9B9B97;
+  --text-link:      #5B5BD6;
+
+  /* Borders */
+  --border-default: rgba(0,0,0,0.08);
+  --border-medium:  rgba(0,0,0,0.14);
+  --border-strong:  rgba(0,0,0,0.20);
+
+  /* Accent — purple */
+  --accent:         #5B5BD6;
+  --accent-bg:      #EEEEFF;
+  --accent-text:    #3333A3;
+  --accent-border:  #C7C7F0;
+
+  /* Verified — green */
+  --verified:       #18794E;
+  --verified-bg:    #DFF3EB;
+  --verified-text:  #166035;
+  --verified-border:#A8DFC5;
+
+  /* Featured — amber */
+  --featured:       #AD5700;
+  --featured-bg:    #FFF1D7;
+  --featured-text:  #7C3D12;
+  --featured-border:#F5CC8A;
+
+  /* Revenue ranges */
+  --mrr-0-bg:       #F2F2F0;
+  --mrr-1k-bg:      #FFF1D7;
+  --mrr-10k-bg:     #E8F5FF;
+  --mrr-100k-bg:    #DFF3EB;
+  --mrr-big-bg:     #EEEEFF;
+
+  /* Semantic */
+  --danger-bg:      #FFEFEF;
+  --danger-text:    #9B1515;
+  --danger-border:  #FFCECE;
+}
+
+:root[data-theme="dark"] {
+    --bg-page:        #0C0C0B;
+    --bg-surface:     #1C1C1A; /* Increased brightness for contrast */
+    --bg-hover:       #242422;
+    --bg-subtle:      #2A2A28; /* Increased brightness for contrast */
+
+    --text-primary:   #EDEDEC;
+    --text-secondary: #A0A09C;
+    --text-tertiary:  #6B6B68;
+    --text-link:      #8B8BFF;
+
+    --border-default: rgba(255,255,255,0.12); /* Increased border opacity for contrast */
+    --border-medium:  rgba(255,255,255,0.18);
+    --border-strong:  rgba(255,255,255,0.24);
+
+    --accent:         #8B8BFF;
+    --accent-bg:      #1E1E3F;
+    --accent-text:    #ADADFF;
+    --accent-border:  #3535A0;
+
+    --verified:       #4CC38A;
+    --verified-bg:    #0D2E1F;
+    --verified-text:  #4CC38A;
+    --verified-border:#1A5738;
+
+    --featured:       #F5A623;
+    --featured-bg:    #2A1D00;
+    --featured-text:  #F5A623;
+    --featured-border:#6B4500;
+
+    /* Revenue ranges (Dark Mode) */
+    --mrr-0-bg:       #2A2A28;
+    --mrr-1k-bg:      #3D2A00;
+    --mrr-10k-bg:     #002B4D;
+    --mrr-100k-bg:    #00331A;
+    --mrr-big-bg:     #1E1E3F;
+  }
+
+/* ============================================
+   Component: Semi-transparent nav background
+   ============================================ */
+
+.nav-bg {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+:root[data-theme="dark"] .nav-bg {
+  background-color: rgba(20, 20, 19, 0.8);
+}
+
+/* ============================================
+   Base layer overrides
+   ============================================ */
+
+@layer base {
+  *,
+  ::after,
+  ::before {
+    border-color: var(--border-default);
+  }
+
+  body {
+    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.7;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6, th {
+    font-weight: 500;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  a, button, input, select, textarea {
+    font-family: inherit;
+  }
+}

@@ -1,0 +1,225 @@
+@model List<whoshippedit.Models.Idea>
+@{
+    ViewData["Title"] = "Validate an idea";
+    var totalIdeas = ViewBag.TotalIdeas ?? 0;
+    var avgDemand = ViewBag.AverageDemand ?? 0;
+    var totalBuilding = ViewBag.TotalBuilding ?? 0;
+    var categories = ViewBag.Categories as List<whoshippedit.Models.Category> ?? new List<whoshippedit.Models.Category>();
+
+    var ideasToDisplay = Model != null && Model.Any() ? Model : new List<whoshippedit.Models.Idea>
+    {
+        new whoshippedit.Models.Idea {
+            Slug = "ai-code-reviewer",
+            Title = "AI Code Reviewer for PRs",
+            Problem = "Developers spend hours reviewing boilerplate code and style issues. It slows down shipping.",
+            TargetCustomer = "Engineering Teams",
+            FounderName = "Sarah Chen",
+            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            TotalVotes = 142,
+            VoteYes = 85,
+            VoteMaybe = 40,
+            VoteNo = 17,
+            BuildingCount = 2,
+            CommentCount = 12
+        },
+        new whoshippedit.Models.Idea {
+            Slug = "notion-to-blog",
+            Title = "Notion to SEO Blog Converter",
+            Problem = "Exporting Notion to a blog with good SEO and fast load times requires custom Next.js setups.",
+            TargetCustomer = "Content Creators",
+            FounderName = "Alex Rivera",
+            CreatedAt = DateTime.UtcNow.AddDays(-5),
+            TotalVotes = 89,
+            VoteYes = 20,
+            VoteMaybe = 50,
+            VoteNo = 19,
+            BuildingCount = 0,
+            CommentCount = 4
+        },
+        new whoshippedit.Models.Idea {
+            Slug = "micro-saas-boiler",
+            Title = "Micro SaaS Boilerplate (.NET)",
+            Problem = "Setting up auth, payments, emails, and DB for every new .NET project takes weeks of boring work.",
+            TargetCustomer = "Solo Founders",
+            FounderName = "Aman Pandey",
+            CreatedAt = DateTime.UtcNow.AddDays(-1),
+            TotalVotes = 215,
+            VoteYes = 150,
+            VoteMaybe = 45,
+            VoteNo = 20,
+            BuildingCount = 5,
+            CommentCount = 28
+        },
+        new whoshippedit.Models.Idea {
+            Slug = "figma-to-tailwind",
+            Title = "Figma to Tailwind React Components",
+            Problem = "Handoff between designers and devs is messy. Re-creating Figma designs in Tailwind takes forever.",
+            TargetCustomer = "Frontend Devs",
+            FounderName = "Designer Dan",
+            CreatedAt = DateTime.UtcNow.AddDays(-10),
+            TotalVotes = 340,
+            VoteYes = 210,
+            VoteMaybe = 100,
+            VoteNo = 30,
+            BuildingCount = 1,
+            CommentCount = 45
+        }
+    };
+    
+    // Fake the stats if there are no ideas
+    if (Model == null || !Model.Any())
+    {
+        totalIdeas = 4;
+        avgDemand = 65;
+        totalBuilding = 8;
+    }
+}
+
+<div class="w-full max-w-[1100px] mx-auto px-6 mt-12 mb-16 flex flex-col">
+    
+    <!-- HEADER -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+        <div>
+            <h1 class="text-[22px] font-medium text-primary tracking-tight">Validate an idea</h1>
+            <p class="text-[13px] text-secondary mt-1">
+                Real founders voting with real prices. Know if it's worth building before you write a line of code.
+            </p>
+        </div>
+        <a href="/validate/submit" class="px-5 py-2.5 bg-primary text-page rounded-lg text-sm font-medium hover:opacity-90 transition-opacity shadow-sm shrink-0">
+            + Submit idea
+        </a>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="bg-subtle rounded-lg px-4 py-2.5 mt-6 flex flex-wrap items-center gap-y-2">
+        <div class="text-12 text-secondary px-4 border-r border-default first:pl-0">
+            📋 <span class="text-primary font-medium">@totalIdeas</span> ideas validated
+        </div>
+        <div class="text-12 text-secondary px-4 border-r border-default">
+            💰 <span class="text-primary font-medium">@avgDemand%</span> average willingness to pay
+        </div>
+        <div class="text-12 text-secondary px-4 border-r-0">
+            🔨 <span class="text-primary font-medium">@totalBuilding</span> founders building
+        </div>
+    </div>
+
+    <!-- FILTER + SORT ROW -->
+    <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+            <select onchange="window.location.href = '?category=' + this.value" class="h-8 bg-surface border border-default hover:border-medium rounded-md px-3 text-12 text-secondary focus:outline-none appearance-none pr-8 cursor-pointer relative" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 8px center;">
+                <option value="">All categories</option>
+                @foreach (var cat in categories)
+                {
+                    <!option value="@cat.Slug" @(Context.Request.Query["category"] == cat.Slug ? "selected" : "")>@cat.Name</!option>
+                }
+            </select>
+
+            <div class="flex items-center gap-1 ml-2">
+                <a href="?status=all" class="px-3 py-1.5 rounded-full text-12 font-medium border @(Context.Request.Query["status"] == "all" || !Context.Request.Query.ContainsKey("status") ? "bg-accent-bg text-accent-text border-accent-border" : "bg-surface text-secondary border-default hover:border-medium")">All</a>
+                <a href="?status=high_demand" class="px-3 py-1.5 rounded-full text-12 font-medium border @(Context.Request.Query["status"] == "high_demand" ? "bg-accent-bg text-accent-text border-accent-border" : "bg-surface text-secondary border-default hover:border-medium")">High demand</a>
+                <a href="?status=building" class="px-3 py-1.5 rounded-full text-12 font-medium border @(Context.Request.Query["status"] == "building" ? "bg-accent-bg text-accent-text border-accent-border" : "bg-surface text-secondary border-default hover:border-medium")">Being built</a>
+                <a href="?status=newest" class="px-3 py-1.5 rounded-full text-12 font-medium border @(Context.Request.Query["status"] == "newest" ? "bg-accent-bg text-accent-text border-accent-border" : "bg-surface text-secondary border-default hover:border-medium")">Recently added</a>
+            </div>
+        </div>
+
+        <select onchange="window.location.href = '?sort=' + this.value" class="h-8 bg-surface border border-default hover:border-medium rounded-md px-3 text-12 text-secondary focus:outline-none appearance-none pr-8 cursor-pointer relative" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 8px center;">
+            <!option value="hottest" @(Context.Request.Query["sort"] == "hottest" || !Context.Request.Query.ContainsKey("sort") ? "selected" : "")>Hottest</!option>
+            <!option value="most_would_pay" @(Context.Request.Query["sort"] == "most_would_pay" ? "selected" : "")>Most would pay</!option>
+            <!option value="newest" @(Context.Request.Query["sort"] == "newest" ? "selected" : "")>Newest</!option>
+            <!option value="most_commented" @(Context.Request.Query["sort"] == "most_commented" ? "selected" : "")>Most commented</!option>
+        </select>
+    </div>
+
+    <!-- IDEAS GRID -->
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        @foreach (var idea in ideasToDisplay)
+        {
+            var totalVotes = idea.TotalVotes;
+            double pYes = totalVotes > 0 ? (double)idea.VoteYes / totalVotes * 100 : 0;
+            double pMaybe = totalVotes > 0 ? (double)idea.VoteMaybe / totalVotes * 100 : 0;
+            double pNo = totalVotes > 0 ? (double)idea.VoteNo / totalVotes * 100 : 0;
+
+            <div onclick="window.location.href='/validate/@idea.Slug'" class="bg-surface border border-default rounded-lg p-4 hover:border-medium transition-colors cursor-pointer flex flex-col h-full animate-fade-up">
+                <!-- Row 1: Header -->
+                <div class="flex justify-between items-start gap-3">
+                    <div class="flex flex-col gap-1">
+                        <span class="inline-block px-1.5 py-[1px] rounded bg-subtle text-secondary border border-default text-10 uppercase font-medium tracking-wide w-fit">
+                            SaaS Idea
+                        </span>
+                        <h3 class="text-14 font-medium text-primary mt-1 line-clamp-2">@idea.Title</h3>
+                    </div>
+                    @if (idea.BuildingCount > 0)
+                    {
+                        <span class="bg-featured-bg text-featured-text border border-featured-border text-11 rounded-md px-2 py-0.5 shrink-0 font-medium">
+                            🔨 @idea.BuildingCount building
+                        </span>
+                    }
+                </div>
+
+                <!-- Row 2: Problem -->
+                <div class="mt-2 text-12 text-secondary line-clamp-2 leading-relaxed">
+                    <span class="text-tertiary">Problem:</span> @idea.Problem
+                </div>
+
+                <!-- Row 3: PRICE VOTE BAR -->
+                <div class="mt-auto pt-4">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-11 text-tertiary uppercase tracking-wider font-medium">Would you use this?</span>
+                        <span class="text-11 text-tertiary">@totalVotes votes</span>
+                    </div>
+
+                    @if (totalVotes == 0)
+                    {
+                        <div class="w-full h-2 rounded-full bg-subtle"></div>
+                        <div class="mt-1.5 text-11 text-tertiary font-medium">Be the first to vote &rarr;</div>
+                    }
+                    else
+                    {
+                        <div class="w-full h-2 rounded-full overflow-hidden flex bg-subtle">
+                            @if (pYes > 0)  { <div style="width: @Math.Round(pYes)%" class="bg-[var(--verified)] h-full"></div> }
+                            @if (pMaybe > 0) { <div style="width: @Math.Round(pMaybe)%" class="bg-[var(--accent)] h-full"></div> }
+                            @if (pNo > 0) { <div style="width: @Math.Round(pNo)%" class="bg-[var(--text-tertiary)] h-full"></div> }
+                        </div>
+                        <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                            @if (pYes > 0)  { <div class="text-10 text-secondary flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[var(--verified)]"></span> @Math.Round(pYes)% yes</div> }
+                            @if (pMaybe > 0) { <div class="text-10 text-secondary flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></span> @Math.Round(pMaybe)% maybe</div> }
+                            @if (pNo > 0) { <div class="text-10 text-secondary flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[var(--text-tertiary)]"></span> @Math.Round(pNo)% no</div> }
+                        </div>
+                    }
+                </div>
+
+                <!-- Row 4: Footer -->
+                <div class="mt-4 pt-2.5 flex justify-between items-center border-t border-default">
+                    <div class="text-11 text-tertiary">
+                        by @idea.FounderName &middot; @idea.CreatedAt.ToString("MMM d")
+                    </div>
+                    <div class="flex gap-3">
+                        <span class="text-11 text-secondary">💬 @idea.CommentCount</span>
+                        <span class="text-11 text-secondary">🔨 @idea.BuildingCount building</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Load More -->
+    @if (ideasToDisplay.Count > 0)
+    {
+        <div class="flex flex-col items-center justify-center mt-8 gap-2">
+            <button class="px-6 py-2.5 bg-surface border border-default text-primary rounded-lg text-sm font-medium hover:bg-hover hover:border-medium transition-colors shadow-sm inline-flex items-center justify-center">
+                Load more ideas
+            </button>
+            <span class="text-12 text-secondary">Showing @ideasToDisplay.Count of @totalIdeas ideas</span>
+        </div>
+    }
+</div>
+
+<style>
+    @@keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-up {
+        animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+</style>

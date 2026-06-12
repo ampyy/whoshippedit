@@ -1,0 +1,135 @@
+@model List<whoshippedit.Models.Idea>
+@{
+    ViewData["Title"] = "Dashboard";
+    var tab = ViewBag.Tab as string ?? "ideas";
+}
+
+<div class="w-full max-w-[800px] mx-auto px-6 mt-12 mb-24">
+    <main>
+        <div class="flex items-end justify-between border-b border-[var(--border-default)] pb-6 mb-8">
+            <div>
+                <h1 class="text-[28px] font-semibold text-primary tracking-tight">
+                    @(tab == "saas" ? "Submitted SaaS" : (tab == "bookmarked" ? "Bookmarked Ideas" : "Validate Ideas"))
+                </h1>
+                <p class="text-[14px] text-secondary mt-1.5">
+                    @(tab == "saas" ? "SaaS products you have submitted to the directory." : (tab == "bookmarked" ? "Ideas you've saved to keep an eye on." : "The brilliant ideas you're validating with the community."))
+                </p>
+            </div>
+            @if (tab == "ideas" && Model.Count > 0)
+            {
+                <a href="/validate/submit" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-primary text-page rounded-[8px] text-[13px] font-medium hover:opacity-90 transition-opacity shadow-sm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Submit Idea
+                </a>
+            }
+        </div>
+
+        @if (tab == "ideas" && Model.Count > 0)
+        {
+            <a href="/validate/submit" class="sm:hidden flex justify-center items-center gap-2 w-full px-4 py-2.5 mb-8 bg-primary text-page rounded-[8px] text-[14px] font-medium hover:opacity-90 transition-opacity shadow-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Submit Idea
+            </a>
+        }
+
+        @if (Model.Count == 0 || tab != "ideas")
+        {
+            <div class="mt-16 mb-24 max-w-2xl mx-auto">
+                @if (tab == "saas")
+                {
+                    <div class="relative overflow-hidden bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-3xl py-24 px-8 text-center flex flex-col items-center shadow-lg">
+                        <div class="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none"></div>
+                        <div class="w-20 h-20 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6 shadow-sm text-blue-400">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                        </div>
+                        <span class="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-[11px] font-bold uppercase tracking-widest mb-4">Coming Soon</span>
+                        <h3 class="text-[20px] font-medium text-primary mb-3">Submitted SaaS</h3>
+                        <p class="text-[15px] text-secondary mb-8 leading-relaxed max-w-md mx-auto">
+                            We're currently building the ability to submit your own SaaS products to the directory. Soon you'll be able to manage them right here.
+                        </p>
+                        <a href="/directory" class="px-6 py-2.5 bg-white text-black rounded-xl text-[14px] font-medium hover:bg-gray-100 transition-colors shadow-sm">
+                            Explore Directory
+                        </a>
+                    </div>
+                }
+                else if (tab == "bookmarked")
+                {
+                    <div class="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-3xl py-24 px-8 text-center flex flex-col items-center shadow-sm">
+                        <div class="w-20 h-20 rounded-full bg-[var(--bg-hover)] border border-[var(--border-default)] flex items-center justify-center mb-6 text-[var(--text-tertiary)]">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                        </div>
+                        <h3 class="text-[20px] font-medium text-primary mb-3">No bookmarks yet</h3>
+                        <p class="text-[15px] text-secondary mb-8 leading-relaxed max-w-md mx-auto">
+                            You haven't bookmarked any ideas. Explore the community and save your favorite concepts to keep an eye on them here.
+                        </p>
+                        <a href="/validate" class="px-6 py-2.5 bg-primary text-page rounded-xl text-[14px] font-medium hover:opacity-90 transition-opacity shadow-sm">
+                            Explore ideas
+                        </a>
+                    </div>
+                }
+                else if (tab == "ideas")
+                {
+                    <div class="bg-transparent border border-[var(--border-default)] rounded-3xl py-24 px-8 text-center flex flex-col items-center">
+                        <div class="w-20 h-20 rounded-full bg-[var(--bg-surface)] border border-[var(--border-default)] flex items-center justify-center mb-6 text-[var(--text-primary)]">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                        </div>
+                        <h3 class="text-[20px] font-medium text-primary mb-3">Nothing here yet</h3>
+                        <p class="text-[15px] text-secondary mb-8 leading-relaxed max-w-md mx-auto">
+                            You haven't submitted any ideas for validation. Share a concept to see if people would pay for it before you write any code.
+                        </p>
+                        <a href="/validate/submit" class="px-6 py-2.5 bg-primary text-page rounded-xl text-[14px] font-medium hover:opacity-90 transition-opacity shadow-sm">
+                            Submit your first idea
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 gap-4">
+                @foreach (var idea in Model)
+                {
+                    <a href="/validate/@idea.Slug" class="group bg-surface border border-default hover:border-accent hover:bg-hover transition-all duration-150 rounded-lg p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-5 animate-fade-up">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2.5 mb-1.5">
+                                <h3 class="text-14 font-medium text-primary group-hover:text-accent transition-colors truncate">@idea.Title</h3>
+                                <span class="text-11 text-tertiary bg-subtle px-2 py-0.5 rounded-md border border-default">
+                                    @idea.CreatedAt.ToString("MMM d, yyyy")
+                                </span>
+                            </div>
+                            <p class="text-13 text-secondary line-clamp-1 pr-4">
+                                @idea.Problem
+                            </p>
+                        </div>
+                        
+                        <div class="flex items-center gap-6 sm:border-l border-default sm:pl-6 sm:min-w-[160px] shrink-0 justify-between sm:justify-start">
+                            <div>
+                                <p class="text-10 font-medium text-tertiary uppercase tracking-wider mb-1">Price</p>
+                                <span class="px-2 py-0.5 text-11 font-medium bg-subtle text-secondary border border-default rounded">
+                                    @idea.ProposedPrice
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-10 font-medium text-tertiary uppercase tracking-wider mb-1">Votes</p>
+                                <div class="flex items-center gap-1.5 text-13 font-medium text-primary">
+                                    <span class="text-accent">▲</span>
+                                    <span>@idea.TotalVotes</span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </main>
+</div>
+
+<style>
+    @@keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-up {
+        animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+</style>

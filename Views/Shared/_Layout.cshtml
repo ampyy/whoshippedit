@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - WhoBuiltThis</title>
+    <meta name="description" content="Find what's been built. Validate what should be. See who's winning." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script>
+        // Init theme and sidebar state before body to avoid FOUC/layout shift
+        (function() {
+            var theme = localStorage.getItem('theme');
+            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+
+            // Prefetch sidebar collapsed state
+            if (localStorage.getItem('sidebar-collapsed') === 'true' && window.innerWidth >= 768) {
+                document.documentElement.classList.add('sidebar-collapsed');
+            }
+        })();
+    </script>
+    <style>
+        /* Desktop Sidebar Expanded / Collapsed styles */
+        @@media (min-width: 768px) {
+            #app-sidebar {
+                width: 240px !important;
+                transform: translateX(0) !important;
+            }
+            .content-container-auth {
+                padding-left: 240px !important;
+            }
+            .sidebar-collapsed #app-sidebar {
+                width: 68px !important;
+                padding-left: 12px !important;
+                padding-right: 12px !important;
+            }
+            .sidebar-collapsed .content-container-auth {
+                padding-left: 68px !important;
+            }
+            .sidebar-collapsed .sidebar-text,
+            .sidebar-collapsed .sidebar-header-label,
+            .sidebar-collapsed .sidebar-dots,
+            .sidebar-collapsed .sidebar-footer-info {
+                display: none !important;
+            }
+            .sidebar-collapsed .sidebar-link {
+                justify-content: center !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            .sidebar-collapsed .active-dot {
+                display: none !important;
+            }
+            .sidebar-collapsed #sidebar-collapse-btn {
+                justify-content: center !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            .sidebar-collapsed #collapse-icon-left {
+                display: none !important;
+            }
+            .sidebar-collapsed #collapse-icon-right {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+@using whoshippedit.Utilities
+@using System.Security.Claims
+@inject IDbConnectionHelper Db
+
+<body class="min-h-screen bg-page text-primary antialiased">
+    <script>
+        if (localStorage.getItem('sidebar-collapsed') === 'true' && window.innerWidth >= 768) {
+            document.body.classList.add('sidebar-collapsed');
+        }
+    </script>
+
+    @{
+        bool isMasterAdmin = false;
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(userIdClaim, out var uId))
+            {
+                isMasterAdmin = Db.QueryFirstOrDefaultAsync<bool>("SELECT is_master_admin FROM users WHERE id = @Id", new { Id = uId }).Result;
+            }
+        }
+
+        var requestPath = Context.Request.Path.Value?.ToLower() ?? "";
+        bool showSidebar = User.Identity?.IsAuthenticated == true && 
+                           (requestPath.StartsWith("/dashboard") || 
+                            requestPath.StartsWith("/profile") || 
+                            requestPath.StartsWith("/admin"));
+    }
+
+    <!-- Always Render the Top Horizontal Navbar -->
+    <partial name="_navbar" />
+
+    @if (showSidebar)
+    {
+        <!-- Left Sidebar Panel (displays below navbar top-[52px]) -->
+        <aside id="app-sidebar" class="fixed top-[52px] left-0 bottom-0 z-30 w-[240px] bg-surface border-r border-default flex flex-col p-4 md:p-5 -translate-x-full md:translate-x-0 transition-all duration-200 ease-in-out shrink-0 overflow-hidden">
+            <!-- Decorative Top Window Controls (matching SVGs) -->
+            <div class="flex items-center gap-1.5 px-1 sidebar-dots hidden md:flex shrink-0 mb-4">
+                <span class="w-2 h-2 rounded-full bg-[var(--border-medium)]"></span>
+                <span class="w-2 h-2 rounded-full bg-[var(--border-default)]"></span>
+                <span class="w-2 h-2 rounded-full bg-[var(--border-default)]"></span>
+            </div>
+
+            <!-- Navigation Groups (Scrollable) -->
+            <nav class="flex-1 overflow-y-auto pr-1 flex flex-col gap-4">
+                <!-- DASHBOARD GROUP -->
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-[9px] font-semibold text-tertiary tracking-wider uppercase mb-1 sidebar-header-label px-2.5">Dashboard</span>
+
+                    <a href="/dashboard/saas" class="sidebar-link flex items-center gap-2.5 px-2.5 py-1 rounded-lg text-12 font-medium text-secondary hover:text-primary hover:bg-hover transition-all duration-150" title="Submitted SaaS">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sidebar-icon shrink-0"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                        <span class="sidebar-text truncate">Submitted SaaS</span>
+                    </a>
+
+                    <a href="/dashboard/bookmarked" class="sidebar-link flex items-center gap-2.5 px-2.5 py-1 rounded-lg text-12 font-medium text-secondary hover:text-primary hover:bg-hover transition-all duration-150" title="Bookmarked Ideas">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sidebar-icon shrink-0"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                        <span class="sidebar-text truncate">Bookmarked Ideas</span>
+                    </a>
+
+                    <a href="/dashboard/ideas" class="sidebar-link flex items-center gap-2.5 px-2.5 py-1 rounded-lg text-12 font-medium text-secondary hover:text-primary hover:bg-hover transition-all duration-150" title="Validate Ideas">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sidebar-icon shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        <span class="sidebar-text truncate">Validate Ideas</span>
+                    </a>
+
+                    @if (isMasterAdmin)
+                    {
+                        <a href="/admin/submit-product" class="sidebar-link flex items-center gap-2.5 px-2.5 py-1 rounded-lg text-12 font-medium text-blue-500 hover:text-blue-400 hover:bg-hover transition-all duration-150" title="Submit SaaS (Admin)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sidebar-icon shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                            <span class="sidebar-text truncate">Submit SaaS (Admin)</span>
+                        </a>
+                    }
+                </div>
+
+                <!-- PROFILE GROUP -->
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-[9px] font-semibold text-tertiary tracking-wider uppercase mb-1 sidebar-header-label px-2.5">Profile</span>
+
+                    <a href="/profile" class="sidebar-link flex items-center gap-2.5 px-2.5 py-1 rounded-lg text-12 font-medium text-secondary hover:text-primary hover:bg-hover transition-all duration-150" title="Update Profile">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sidebar-icon shrink-0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span class="sidebar-text truncate">Update Profile</span>
+                    </a>
+                </div>
+
+                <!-- ADVERTISE GROUP -->
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-[9px] font-semibold text-tertiary tracking-wider uppercase mb-1 sidebar-header-label px-2.5">Advertise</span>
+
+                    <div class="sidebar-link flex items-center gap-2.5 px-2.5 py-1 rounded-lg text-12 font-medium text-tertiary cursor-not-allowed select-none" title="Advertise (Coming soon)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sidebar-icon shrink-0"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        <span class="sidebar-text truncate">Advertise</span>
+                        <span class="px-1.5 py-[1px] rounded bg-subtle border border-default text-[9px] font-semibold tracking-wider text-tertiary uppercase active-dot ml-auto shrink-0">Soon</span>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Fixed Sidebar Footer (Not scrollable) -->
+            <div class="mt-auto pt-3 border-t border-default flex flex-col gap-3 shrink-0">
+                <!-- Sidebar Collapse/Minimize Button -->
+                <button type="button" id="sidebar-collapse-btn" class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-12 font-medium text-secondary hover:text-primary hover:bg-hover transition-all duration-150 w-full text-left" title="Collapse Menu">
+                    <svg id="collapse-icon-left" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sidebar-icon shrink-0"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+                    <svg id="collapse-icon-right" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="sidebar-icon shrink-0 hidden"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+                    <span class="sidebar-text truncate">Minimize menu</span>
+                </button>
+
+                <!-- User settings / logout / theme toggle -->
+                <div class="flex items-center justify-between">
+                    <!-- User display info -->
+                    <div class="flex items-center gap-2 min-w-0">
+                        <div class="w-6 h-6 rounded-full bg-subtle border border-default flex items-center justify-center text-primary font-medium text-[10px] uppercase shrink-0">
+                            @(User.Identity?.Name?.Substring(0, 1) ?? "U")
+                        </div>
+                        <span class="text-11 text-secondary truncate font-medium max-w-[120px] sidebar-footer-info">@User.Identity?.Name</span>
+                    </div>
+                    
+                    <!-- Theme Toggle inside sidebar -->
+                    <button type="button" class="theme-toggle-btn w-7 h-7 rounded-md flex items-center justify-center text-secondary hover:text-primary hover:bg-hover transition-colors">
+                        <svg class="theme-icon-light hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="theme-icon-dark hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <form action="/auth/logout" method="post" class="block w-full m-0 sidebar-footer-info">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="w-full flex items-center justify-center py-1.5 rounded-md border border-default text-11 font-medium text-danger hover:bg-danger/10 transition-colors">
+                        Logout
+                    </button>
+                </form>
+
+                <div class="text-[10px] text-tertiary text-center sidebar-footer-info">
+                    &copy; 2026 WhoShippedIt.
+                </div>
+            </div>
+        </aside>
+
+        <!-- Backdrop Overlay for Mobile Sidebar -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/40 z-40 hidden"></div>
+
+        <!-- Content Area for Authenticated Users (clears fixed navbar pt-[52px], pushes right on desktop) -->
+        <div class="content-container-auth min-h-screen flex flex-col pt-[52px] md:pl-[240px] transition-all duration-200">
+            <main class="flex-1">
+                <div class="max-w-[1100px] mx-auto px-6 pt-8">
+                    @RenderBody()
+                </div>
+            </main>
+
+            <!-- Minimal Footer for Auth Dashboard pages -->
+            <footer class="w-full py-8 px-6 mt-16 border-t border-default flex justify-between items-center text-xs text-tertiary">
+                <span>&copy; 2026 WhoShippedIt. All rights reserved.</span>
+                <div class="flex gap-6">
+                    <a href="/terms" class="hover:text-primary transition-colors">Terms</a>
+                    <a href="/privacy" class="hover:text-primary transition-colors">Privacy</a>
+                </div>
+            </footer>
+        </div>
+    }
+    else
+    {
+        <!-- Layout for Logged Out Users -->
+        <main class="pt-[52px]">
+            <div class="max-w-[1100px] mx-auto px-6 pt-8">
+                @RenderBody()
+            </div>
+        </main>
+
+        <!-- ============ Footer ============ -->
+        <footer class="w-full bg-[#0a0a0a] text-white pt-24 pb-12 mt-32 md:rounded-t-[40px] px-6 lg:px-12 border-t border-white/10">
+            <div class="max-w-[1280px] mx-auto flex flex-col">
+                
+                <!-- Top Links & Newsletter -->
+                <div class="flex flex-col md:flex-row justify-between items-start gap-16 mb-32">
+                    <div class="max-w-md">
+                        <h3 class="text-3xl font-medium tracking-tight mb-4">Drop us a line</h3>
+                        <p class="text-white/60 mb-8 text-sm leading-relaxed">
+                            A directory of every micro SaaS product and idea. We're ready to embark on this journey with you. Are you?
+                        </p>
+                        <div class="flex flex-wrap sm:flex-nowrap gap-3">
+                            <input type="email" placeholder="Your email" class="bg-white/10 border-none rounded-full px-5 py-3.5 text-sm focus:ring-1 focus:ring-white outline-none w-full max-w-sm text-white placeholder:text-white/40">
+                            <button class="bg-white text-black px-8 py-3.5 rounded-full text-sm font-bold hover:bg-white/90 transition-colors shrink-0">
+                                Contact
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-16 md:gap-24">
+                        <div class="flex flex-col gap-4">
+                            <span class="text-white/30 text-xs font-bold tracking-[0.2em] uppercase mb-2">[ EXPLORE ]</span>
+                            <a href="/directory" class="text-[13px] text-white/70 hover:text-white transition-colors">Directory</a>
+                            <a href="/verified" class="text-[13px] text-white/70 hover:text-white transition-colors">Verified SaaS</a>
+                            <a href="/categories" class="text-[13px] text-white/70 hover:text-white transition-colors">Categories</a>
+                            <a href="/new" class="text-[13px] text-white/70 hover:text-white transition-colors">New Launches</a>
+                        </div>
+                        <div class="flex flex-col gap-4">
+                            <span class="text-white/30 text-xs font-bold tracking-[0.2em] uppercase mb-2">[ COMPANY ]</span>
+                            <a href="/about" class="text-[13px] text-white/70 hover:text-white transition-colors">About</a>
+                            <a href="/submit" class="text-[13px] text-white/70 hover:text-white transition-colors">Submit Product</a>
+                            <a href="https://twitter.com/whoshippedit" target="_blank" class="text-[13px] text-white/70 hover:text-white transition-colors">Twitter / X</a>
+                            <a href="mailto:hello@whoshippedit.com" class="text-[13px] text-white/70 hover:text-white transition-colors">Contact Us</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Massive Text -->
+                <div class="w-full border-t border-white/10 pt-20 pb-12 flex flex-col items-center justify-center relative">
+                    <!-- Using inline styles to absolutely guarantee rendering -->
+                    <div style="font-size: min(13vw, 180px); font-weight: 800; line-height: 0.85; letter-spacing: -0.04em; color: white; text-align: center; margin-bottom: 1.5rem; white-space: nowrap; overflow: hidden; width: 100%;">
+                        WHOSHIPPEDIT
+                    </div>
+                    <p class="text-white/50 text-sm md:text-base font-medium tracking-[0.3em] uppercase text-center">
+                        Built for upcoming founders
+                    </p>
+                </div>
+
+                <!-- Copyright -->
+                <div class="flex flex-col md:flex-row justify-between items-center text-xs text-white/40 mt-8 pt-8 border-t border-white/10">
+                    <span>&copy; 2026 WhoShippedIt. All rights reserved.</span>
+                    <div class="flex gap-6 mt-4 md:mt-0">
+                        <a href="/terms" class="hover:text-white transition-colors">Terms of Service</a>
+                        <a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    }
+
+    <!-- Global Responsive JS for Sidebars & Active Link Highlighting -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // 1. Sidebar Active Link Highlighting
+            var currentPath = window.location.pathname.toLowerCase();
+            var sidebarLinks = document.querySelectorAll(".sidebar-link");
+            sidebarLinks.forEach(function (link) {
+                var href = link.getAttribute("href");
+                if (href) {
+                    var lowHref = href.toLowerCase();
+                    // Handle exact match or subpath match for sub-pages
+                    if (currentPath === lowHref || (lowHref !== "/" && lowHref !== "/validate" && lowHref !== "/verified" && currentPath.startsWith(lowHref))) {
+                        link.classList.remove("text-secondary");
+                        link.classList.add("text-primary", "bg-hover");
+                        var dot = link.querySelector(".active-dot");
+                        if (dot) {
+                            dot.classList.remove("opacity-0");
+                            dot.classList.add("opacity-100");
+                        }
+                    }
+                }
+            });
+
+            // 2. Sidebar Mobile Drawer Toggle & Collapse Toggle
+            var sidebar = document.getElementById("app-sidebar");
+            var backdrop = document.getElementById("sidebar-backdrop");
+            var collapseBtn = document.getElementById("sidebar-collapse-btn");
+
+            function toggleSidebar() {
+                if (sidebar && backdrop) {
+                    var isHidden = sidebar.classList.contains("-translate-x-full");
+                    if (isHidden) {
+                        sidebar.classList.remove("-translate-x-full");
+                        backdrop.classList.remove("hidden");
+                    } else {
+                        sidebar.classList.add("-translate-x-full");
+                        backdrop.classList.add("hidden");
+                    }
+                }
+            }
+
+            // Bind mobile menu button in top navbar to toggle sidebar drawer
+            var mobileMenuBtn = document.getElementById("mobile-menu-btn");
+            if (mobileMenuBtn && sidebar) {
+                mobileMenuBtn.addEventListener("click", function (e) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    toggleSidebar();
+                });
+            }
+
+            if (backdrop) {
+                backdrop.addEventListener("click", toggleSidebar);
+            }
+
+            // Collapse Button click handler
+            if (collapseBtn) {
+                collapseBtn.addEventListener("click", function () {
+                    var isCollapsed = document.documentElement.classList.toggle("sidebar-collapsed");
+                    document.body.classList.toggle("sidebar-collapsed", isCollapsed);
+                    localStorage.setItem("sidebar-collapsed", isCollapsed ? "true" : "false");
+                });
+            }
+
+            // 3. Sync Theme Toggles Globally
+            var themeToggles = document.querySelectorAll(".theme-toggle-btn, #theme-toggle");
+            
+            function getTheme() {
+                var t = localStorage.getItem('theme');
+                if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    return 'dark';
+                }
+                return 'light';
+            }
+
+            function applyThemeIcons(theme) {
+                document.querySelectorAll(".theme-icon-light").forEach(function (el) {
+                    el.classList.toggle("hidden", theme !== "dark");
+                });
+                document.querySelectorAll(".theme-icon-dark").forEach(function (el) {
+                    el.classList.toggle("hidden", theme === "dark");
+                });
+            }
+
+            // Init icons
+            applyThemeIcons(getTheme());
+
+            themeToggles.forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var currentTheme = document.documentElement.getAttribute("data-theme") || getTheme();
+                    var newTheme = currentTheme === "dark" ? "light" : "dark";
+                    document.documentElement.setAttribute("data-theme", newTheme);
+                    localStorage.setItem("theme", newTheme);
+                    applyThemeIcons(newTheme);
+                });
+            });
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

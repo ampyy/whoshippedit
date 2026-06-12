@@ -1,0 +1,528 @@
+@using whoshippedit.Models
+@using whoshippedit.Utilities
+@using System.Security.Claims
+@inject IDbConnectionHelper Db
+@model whoshippedit.Models.Product
+@{
+    ViewData["Title"] = "Submit SaaS";
+    var categories       = ViewBag.Categories      as List<Category>       ?? new List<Category>();
+    var targetCustomers  = ViewBag.TargetCustomers as List<TargetCustomer> ?? new List<TargetCustomer>();
+    var selectedTargetIds = (ViewBag.SelectedTargetIds as List<string>) ?? new List<string>();
+
+    bool isMasterAdmin = false;
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdClaim, out var uId))
+        {
+            isMasterAdmin = Db.QueryFirstOrDefaultAsync<bool>("SELECT is_master_admin FROM users WHERE id = @Id", new { Id = uId }).Result;
+        }
+    }
+}
+
+<div class="w-full max-w-[600px] mx-auto px-4 mt-8 mb-24">
+    <!-- HEADER -->
+    <div class="mb-6 text-center sm:text-left">
+        <h1 class="text-[24px] font-semibold text-primary tracking-tight">Submit SaaS (Admin)</h1>
+        <p class="text-[13px] text-secondary mt-1">
+            Direct database insertion. Auto-approved.
+        </p>
+    </div>
+
+    <!-- FORM CARD -->
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-5 shadow-sm">
+        <form method="post" action="/admin/submit-product" class="flex flex-col gap-5">
+            @Html.AntiForgeryToken()
+            
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-[13px] text-red-400 mb-2">
+                    @Html.ValidationSummary(false, "", new { @class = "ml-4" })
+                </div>
+            }
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- FIELD: Name -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="Name">Product Name</label>
+                    <input type="text" id="Name" name="Name" value="@Model.Name" maxlength="100" 
+                           placeholder="e.g. Stripe" 
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary placeholder-white/20 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all"
+                           required />
+                </div>
+
+                <!-- FIELD: Website URL -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="WebsiteUrl">Website URL</label>
+                    <input type="url" id="WebsiteUrl" name="WebsiteUrl" value="@Model.WebsiteUrl" 
+                           placeholder="e.g. https://stripe.com" 
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary placeholder-white/20 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all"
+                           required />
+                </div>
+            </div>
+
+            <!-- FIELD: Tagline -->
+            <div class="flex flex-col group">
+                <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="Tagline">Tagline</label>
+                <input type="text" id="Tagline" name="Tagline" value="@Model.Tagline" maxlength="160"
+                       placeholder="e.g. Financial infrastructure for the internet" 
+                       class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary placeholder-white/20 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all"
+                       required />
+            </div>
+
+            <!-- FIELD: Description -->
+            <div class="flex flex-col group">
+                <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="Description">Description</label>
+                <textarea id="Description" name="Description" rows="3"
+                          class="w-full p-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary placeholder-white/20 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all resize-none">@Model.Description</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- FIELD: Category -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="CategoryId">Category</label>
+                    <div class="relative">
+                        <select id="CategoryId" name="CategoryId" 
+                                class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary placeholder-white/20 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all appearance-none cursor-pointer">
+                            <option value="" class="bg-[var(--bg-surface)] text-secondary">Select a category...</option>
+                            @foreach (var c in categories)
+                            {
+                                if (Model.CategoryId == c.Id)
+                                {
+                                    <option value="@c.Id" selected class="bg-[var(--bg-surface)] text-primary">@c.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@c.Id" class="bg-[var(--bg-surface)] text-primary">@c.Name</option>
+                                }
+                            }
+                        </select>
+                        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-secondary group-focus-within:text-primary transition-colors">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- FIELD: Founder Name -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="FounderName">Founder Name</label>
+                    <input type="text" id="FounderName" name="FounderName" value="@Model.FounderName" 
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" />
+                </div>
+                <!-- FIELD: Founder Twitter -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="FounderTwitter">Founder Twitter Handle</label>
+                    <input type="text" id="FounderTwitter" name="FounderTwitter" value="@Model.FounderTwitter" placeholder="e.g. patrickc"
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" />
+                </div>
+            </div>
+
+            <!-- FIELD: Founder LinkedIn -->
+            <div class="flex flex-col group">
+                <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="FounderLinkedin">Founder LinkedIn Handle</label>
+                <input type="text" id="FounderLinkedin" name="FounderLinkedin" value="@Model.FounderLinkedin" placeholder="e.g. patrick-collison"
+                       class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- FIELD: Founded Year -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="FoundedYear">Founded Year</label>
+                    <input type="number" id="FoundedYear" name="FoundedYear" value="@Model.FoundedYear" placeholder="e.g. 2024" min="1990" max="2030"
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" />
+                </div>
+                <!-- FIELD: Country -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="CountryCode">Country</label>
+                    <div class="relative">
+                        <select id="CountryCode" name="CountryCode"
+                                class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all appearance-none cursor-pointer">
+                            @{
+                                var countryCode = Model.CountryCode ?? "";
+                                var countries = new (string Code, string Name)[] {
+                                    ("",     "Select country..."),
+                                    ("US",   "United States"),
+                                    ("GB",   "United Kingdom"),
+                                    ("IN",   "India"),
+                                    ("CA",   "Canada"),
+                                    ("AU",   "Australia"),
+                                    ("DE",   "Germany"),
+                                    ("FR",   "France"),
+                                    ("NL",   "Netherlands"),
+                                    ("SE",   "Sweden"),
+                                    ("NO",   "Norway"),
+                                    ("DK",   "Denmark"),
+                                    ("FI",   "Finland"),
+                                    ("CH",   "Switzerland"),
+                                    ("AT",   "Austria"),
+                                    ("BE",   "Belgium"),
+                                    ("ES",   "Spain"),
+                                    ("IT",   "Italy"),
+                                    ("PT",   "Portugal"),
+                                    ("PL",   "Poland"),
+                                    ("CZ",   "Czech Republic"),
+                                    ("RO",   "Romania"),
+                                    ("UA",   "Ukraine"),
+                                    ("RU",   "Russia"),
+                                    ("TR",   "Turkey"),
+                                    ("IL",   "Israel"),
+                                    ("AE",   "United Arab Emirates"),
+                                    ("SG",   "Singapore"),
+                                    ("JP",   "Japan"),
+                                    ("KR",   "South Korea"),
+                                    ("CN",   "China"),
+                                    ("TW",   "Taiwan"),
+                                    ("HK",   "Hong Kong"),
+                                    ("MY",   "Malaysia"),
+                                    ("TH",   "Thailand"),
+                                    ("ID",   "Indonesia"),
+                                    ("PH",   "Philippines"),
+                                    ("VN",   "Vietnam"),
+                                    ("PK",   "Pakistan"),
+                                    ("BD",   "Bangladesh"),
+                                    ("LK",   "Sri Lanka"),
+                                    ("NG",   "Nigeria"),
+                                    ("GH",   "Ghana"),
+                                    ("KE",   "Kenya"),
+                                    ("ZA",   "South Africa"),
+                                    ("EG",   "Egypt"),
+                                    ("BR",   "Brazil"),
+                                    ("MX",   "Mexico"),
+                                    ("AR",   "Argentina"),
+                                    ("CO",   "Colombia"),
+                                    ("CL",   "Chile"),
+                                    ("NZ",   "New Zealand"),
+                                    ("OTHER","Other"),
+                                };
+                            }
+                            @foreach (var country in countries)
+                            {
+                                if (countryCode == country.Code)
+                                {
+                                    <option value="@country.Code" selected class="bg-[var(--bg-surface)]">@country.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@country.Code" class="bg-[var(--bg-surface)]">@country.Name</option>
+                                }
+                            }
+                        </select>
+                        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-secondary">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REVENUE SECTION -->
+            <div class="flex flex-col gap-1.5">
+                <span class="text-[11px] font-bold text-secondary uppercase tracking-wider">Revenue</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- FIELD: MRR -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="Mrr">MRR (USD)</label>
+                    <input type="number" id="Mrr" name="Mrr" value="@Model.Mrr" placeholder="e.g. 4250" min="0"
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" />
+                </div>
+                <!-- FIELD: ARR -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="Arr">ARR (USD)</label>
+                    <input type="number" id="Arr" name="Arr" value="@Model.Arr" placeholder="e.g. 51000" min="0"
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" />
+                </div>
+                <!-- FIELD: Currency -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="Currency">Currency</label>
+                    <div class="relative">
+                        <select id="Currency" name="Currency"
+                                class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all appearance-none cursor-pointer">
+                            @{ var cur = Model.Currency ?? "USD"; }
+                            @foreach (var c in new[] { "USD", "EUR", "INR", "GBP" })
+                            {
+                                if (cur == c)
+                                {
+                                    <option value="@c" selected class="bg-[var(--bg-surface)]">@c</option>
+                                }
+                                else
+                                {
+                                    <option value="@c" class="bg-[var(--bg-surface)]">@c</option>
+                                }
+                            }
+                        </select>
+                        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-secondary">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PRICING SECTION -->
+            <div class="flex flex-col gap-1.5">
+                <span class="text-[11px] font-bold text-secondary uppercase tracking-wider">Pricing</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- FIELD: Pricing Type -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="PricingType">Model</label>
+                    <div class="relative">
+                        <select id="PricingType" name="PricingType"
+                                class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all appearance-none cursor-pointer">
+                            <option value="" class="bg-[var(--bg-surface)] text-secondary">Select...</option>
+                            @{ var pt = Model.PricingType; }
+                            @foreach (var opt in new[] { (val: 0, label: "Free"), (val: 1, label: "Freemium"), (val: 2, label: "Paid"), (val: 3, label: "One-time") })
+                            {
+                                if (pt == (short)opt.val)
+                                {
+                                    <option value="@opt.val" selected class="bg-[var(--bg-surface)]">@opt.label</option>
+                                }
+                                else
+                                {
+                                    <option value="@opt.val" class="bg-[var(--bg-surface)]">@opt.label</option>
+                                }
+                            }
+                        </select>
+                        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-secondary">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                    </div>
+                </div>
+                <!-- FIELD: Price From -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="PriceFrom">From ($)</label>
+                    <input type="number" id="PriceFrom" name="PriceFrom" value="@Model.PriceFrom" placeholder="e.g. 9" min="0"
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" />
+                </div>
+                <!-- FIELD: Price To -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="PriceTo">To ($) <span class="text-tertiary font-normal">(leave blank if single plan)</span></label>
+                    <input type="number" id="PriceTo" name="PriceTo" value="@Model.PriceTo" placeholder="e.g. 99" min="0"
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" />
+                </div>
+            </div>
+
+            <!-- TARGET CUSTOMER PICKER -->
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[12px] font-medium text-primary">Who is this for?</span>
+                    <span id="target-count-label" class="text-[11px] text-tertiary hidden"></span>
+                </div>
+
+                <!-- Hidden inputs (populated by JS) -->
+                <div id="target-hidden-inputs">
+                    @foreach (var sid in selectedTargetIds)
+                    {
+                        <input type="hidden" name="SelectedTargetIds" value="@sid" />
+                    }
+                </div>
+
+                <!-- Pills -->
+                <div class="flex flex-wrap gap-2 mt-0.5" id="target-pills">
+                    @foreach (var tc in targetCustomers)
+                    {
+                        var isSelected = selectedTargetIds.Contains(tc.Id.ToString());
+                        if (isSelected)
+                        {
+                            <button type="button"
+                                    class="target-pill selected px-3 py-1.5 rounded-md text-12 cursor-pointer border border-[var(--accent-border)] bg-[var(--accent-bg)] text-[var(--accent-text)] transition-colors"
+                                    data-id="@tc.Id">@tc.Name</button>
+                        }
+                        else
+                        {
+                            <button type="button"
+                                    class="target-pill px-3 py-1.5 rounded-md text-12 cursor-pointer border border-[var(--border-default)] bg-surface text-secondary hover:border-[var(--border-medium)] hover:text-primary transition-colors"
+                                    data-id="@tc.Id">@tc.Name</button>
+                        }
+                    }
+                </div>
+
+                <p id="target-hint" class="text-[11px] text-tertiary mt-1">Select up to 3 — shown on your product page</p>
+            </div>
+
+            <!-- SUBMIT -->
+            @if (isMasterAdmin)
+            {
+                <div class="mt-4 pt-4 border-t border-[var(--border-default)]">
+                    <div id="form-error" class="hidden mb-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-[13px] text-red-400"></div>
+                    <button type="submit" id="submit-btn"
+                            class="group relative w-full h-10 bg-white text-black text-[13px] font-semibold rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center gap-2 overflow-hidden shadow-sm">
+                        <span>Add to Directory</span>
+                        <svg class="transform group-hover:translate-x-0.5 transition-transform" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            }
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    // ── Form validation ──────────────────────────────────────────────────────
+    const form = document.querySelector('form[action="/admin/submit-product"]');
+    const errorBox = document.getElementById('form-error');
+
+    function showError(msg) {
+        errorBox.textContent = msg;
+        errorBox.classList.remove('hidden');
+        errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function clearError() {
+        errorBox.textContent = '';
+        errorBox.classList.add('hidden');
+    }
+
+    function isValidUrl(str) {
+        try {
+            const u = new URL(str.startsWith('http') ? str : 'https://' + str);
+            return u.hostname.includes('.');
+        } catch { return false; }
+    }
+
+    function highlightField(id, isError) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle('border-red-500/60', isError);
+        el.classList.toggle('border-[var(--border-default)]', !isError);
+    }
+
+    form.addEventListener('submit', function (e) {
+        clearError();
+        const errors = [];
+        const fields = ['Name', 'WebsiteUrl', 'Tagline', 'FoundedYear', 'Mrr', 'Arr', 'PriceFrom', 'PriceTo'];
+        fields.forEach(id => highlightField(id, false));
+
+        const name = document.getElementById('Name').value.trim();
+        if (!name) { errors.push('Product name is required.'); highlightField('Name', true); }
+        else if (name.length > 100) { errors.push('Product name must be 100 characters or fewer.'); highlightField('Name', true); }
+
+        const website = document.getElementById('WebsiteUrl').value.trim();
+        if (!website) { errors.push('Website URL is required.'); highlightField('WebsiteUrl', true); }
+        else if (!isValidUrl(website)) { errors.push('Website URL must be a valid URL (e.g. https://stripe.com).'); highlightField('WebsiteUrl', true); }
+
+        const tagline = document.getElementById('Tagline').value.trim();
+        if (!tagline) { errors.push('Tagline is required.'); highlightField('Tagline', true); }
+        else if (tagline.length > 160) { errors.push('Tagline must be 160 characters or fewer.'); highlightField('Tagline', true); }
+
+        const year = document.getElementById('FoundedYear').value;
+        if (year !== '') {
+            const y = parseInt(year, 10);
+            if (isNaN(y) || y < 1990 || y > 2030) { errors.push('Founded year must be between 1990 and 2030.'); highlightField('FoundedYear', true); }
+        }
+
+        const mrr = document.getElementById('Mrr').value;
+        if (mrr !== '' && parseInt(mrr, 10) < 0) { errors.push('MRR must be a non-negative number.'); highlightField('Mrr', true); }
+
+        const arr = document.getElementById('Arr').value;
+        if (arr !== '' && parseInt(arr, 10) < 0) { errors.push('ARR must be a non-negative number.'); highlightField('Arr', true); }
+
+        const priceFrom = document.getElementById('PriceFrom').value;
+        if (priceFrom !== '' && parseInt(priceFrom, 10) < 0) { errors.push('Price From must be a non-negative number.'); highlightField('PriceFrom', true); }
+
+        const priceTo = document.getElementById('PriceTo').value;
+        if (priceTo !== '') {
+            const to = parseInt(priceTo, 10);
+            if (to < 0) { errors.push('Price To must be a non-negative number.'); highlightField('PriceTo', true); }
+            else if (priceFrom !== '' && to < parseInt(priceFrom, 10)) { errors.push('Price To must be ≥ Price From.'); highlightField('PriceTo', true); }
+        }
+
+        if (errors.length > 0) {
+            e.preventDefault();
+            showError(errors[0]);
+        }
+    });
+
+    // ── Target Customer Picker ───────────────────────────────────────────────
+    const MAX_TARGETS = 3;
+    const pills        = document.querySelectorAll('.target-pill');
+    const hiddenWrap   = document.getElementById('target-hidden-inputs');
+    const countLabel   = document.getElementById('target-count-label');
+    const hint         = document.getElementById('target-hint');
+
+    function getSelected() {
+        return [...hiddenWrap.querySelectorAll('input[name="SelectedTargetIds"]')].map(i => i.value);
+    }
+
+    function syncHiddenInputs(ids) {
+        hiddenWrap.innerHTML = '';
+        ids.forEach(id => {
+            const inp = document.createElement('input');
+            inp.type = 'hidden';
+            inp.name = 'SelectedTargetIds';
+            inp.value = id;
+            hiddenWrap.appendChild(inp);
+        });
+    }
+
+    function updateUI(selected) {
+        const count = selected.length;
+
+        // update count label
+        if (count > 0) {
+            countLabel.textContent = `${count}/${MAX_TARGETS} selected`;
+            countLabel.classList.remove('hidden');
+        } else {
+            countLabel.classList.add('hidden');
+        }
+
+        // update hint
+        if (count >= MAX_TARGETS) {
+            hint.textContent = 'Maximum 3 selected';
+            hint.className = 'text-[11px] text-[var(--featured-text)] mt-1';
+        } else {
+            hint.textContent = 'Select up to 3 — shown on your product page';
+            hint.className = 'text-[11px] text-tertiary mt-1';
+        }
+
+        // update pill styles
+        pills.forEach(pill => {
+            const id = pill.dataset.id;
+            const isSelected = selected.includes(id);
+            const isDisabled = !isSelected && count >= MAX_TARGETS;
+
+            pill.classList.remove(
+                'selected',
+                'border-[var(--accent-border)]', 'bg-[var(--accent-bg)]', 'text-[var(--accent-text)]',
+                'border-[var(--border-default)]', 'bg-surface', 'text-secondary',
+                'hover:border-[var(--border-medium)]', 'hover:text-primary',
+                'bg-subtle', 'text-tertiary', 'cursor-not-allowed', 'opacity-50', 'cursor-pointer'
+            );
+
+            if (isSelected) {
+                pill.classList.add('selected', 'border-[var(--accent-border)]', 'bg-[var(--accent-bg)]',
+                    'text-[var(--accent-text)]', 'cursor-pointer');
+            } else if (isDisabled) {
+                pill.classList.add('border-[var(--border-default)]', 'bg-subtle', 'text-tertiary',
+                    'opacity-50', 'cursor-not-allowed');
+            } else {
+                pill.classList.add('border-[var(--border-default)]', 'bg-surface', 'text-secondary',
+                    'hover:border-[var(--border-medium)]', 'hover:text-primary', 'cursor-pointer');
+            }
+        });
+    }
+
+    pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            let selected = getSelected();
+            const id = pill.dataset.id;
+            if (selected.includes(id)) {
+                selected = selected.filter(s => s !== id);
+            } else if (selected.length < MAX_TARGETS) {
+                selected = [...selected, id];
+            }
+            syncHiddenInputs(selected);
+            updateUI(selected);
+        });
+    });
+
+    // init
+    updateUI(getSelected());
+})();
+</script>

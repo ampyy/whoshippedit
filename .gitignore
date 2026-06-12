@@ -1,0 +1,17 @@
+# Build artifacts
+bin/
+obj/
+
+# Node dependencies
+node_modules/
+
+# IDEs and Editors
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Operating System files
+.DS_Store
+Thumbs.db

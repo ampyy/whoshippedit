@@ -1,0 +1,199 @@
+@model whoshippedit.Models.IdeaSubmitViewModel
+@{
+    ViewData["Title"] = "Share an idea";
+    var categories = ViewBag.Categories as List<whoshippedit.Models.Category> ?? new List<whoshippedit.Models.Category>();
+}
+
+<div class="w-full max-w-[600px] mx-auto px-4 mt-8 mb-24">
+    <!-- HEADER -->
+    <div class="mb-6 text-center sm:text-left">
+        <h1 class="text-[24px] font-semibold text-primary tracking-tight">Share an idea</h1>
+        <p class="text-[13px] text-secondary mt-1">
+            Be specific. Vague ideas get ignored. Good ideas get built.
+        </p>
+    </div>
+
+    <!-- FORM CARD -->
+    <div class="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-5 shadow-sm">
+        <form method="post" action="/validate/submit" class="flex flex-col gap-5">
+            @Html.AntiForgeryToken()
+            
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-[13px] text-red-400 mb-2">
+                    @Html.ValidationSummary(false, "", new { @class = "ml-4" })
+                </div>
+            }
+
+            <!-- FIELD 1: Title -->
+            <div class="flex flex-col group">
+                <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="Title">What's the idea?</label>
+                <input type="text" id="Title" name="Title" value="@Model.Title" maxlength="80" 
+                       placeholder="e.g. AI tool that writes cold emails from a LinkedIn URL" 
+                       class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary placeholder-white/20 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all"
+                       oninput="document.getElementById('title-counter').innerText = this.value.length + '/80'"
+                       onblur="checkDuplicateTitle(this.value)"
+                       required />
+                <div class="flex justify-end mt-1.5">
+                    <span class="text-[11px] font-medium text-tertiary" id="title-counter">
+                        @(Model.Title?.Length ?? 0)/80
+                    </span>
+                </div>
+                
+                <!-- Duplicate Check Warning Box -->
+                <div id="duplicate-warning" class="hidden mt-1 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-[12px] text-blue-400 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span><strong>Similar idea exists:</strong> <span id="duplicate-title"></span></span>
+                    </div>
+                    <a id="duplicate-link" href="#" target="_blank" class="px-3 py-1 bg-blue-500/20 rounded font-medium hover:bg-blue-500/30 transition-colors whitespace-nowrap text-center">View idea</a>
+                </div>
+            </div>
+
+            <!-- FIELD 2: Problem -->
+            <div class="flex flex-col group">
+                <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="Problem">What problem does it solve?</label>
+                <textarea id="Problem" name="Problem" rows="3" maxlength="300"
+                          placeholder="e.g. Writing personalized cold emails takes 30 min per prospect. Most sales reps send generic ones that get ignored."
+                          class="w-full p-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary placeholder-white/20 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all resize-none"
+                          oninput="document.getElementById('problem-counter').innerText = this.value.length + '/300'"
+                          required>@Model.Problem</textarea>
+                <div class="flex justify-end mt-1.5">
+                    <span class="text-[11px] font-medium text-tertiary" id="problem-counter">
+                        @(Model.Problem?.Length ?? 0)/300
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- FIELD 5: Category (Moved up for better grid fit) -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="Category">Category</label>
+                    <div class="relative">
+                        <select id="Category" name="Category" required class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all appearance-none cursor-pointer">
+                            <option value="" class="bg-[var(--bg-surface)] text-secondary">Select a category...</option>
+                            @foreach(var cat in categories)
+                            {
+                                if (Model.Category == cat.Id.ToString())
+                                {
+                                    <option value="@cat.Id" selected class="bg-[var(--bg-surface)] text-primary">@cat.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@cat.Id" class="bg-[var(--bg-surface)] text-primary">@cat.Name</option>
+                                }
+                            }
+                        </select>
+                        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-secondary group-focus-within:text-primary transition-colors">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FIELD 3: Who pays -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="TargetCustomer">Who pays for this?</label>
+                    <input type="text" id="TargetCustomer" name="TargetCustomer" value="@Model.TargetCustomer"
+                           placeholder="e.g. SaaS founders and sales reps" 
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary placeholder-white/20 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all"
+                           required />
+                </div>
+            </div>
+
+            <!-- FIELD 4: Proposed price -->
+            <div class="flex flex-col mt-2">
+                <label class="text-[12px] font-medium text-secondary mb-2">What would you charge?</label>
+                <input type="hidden" id="ProposedPrice" name="ProposedPrice" value="@(string.IsNullOrEmpty(Model.ProposedPrice) ? "$19/mo" : Model.ProposedPrice)" />
+                
+                <div class="flex flex-wrap gap-2" id="price-buttons">
+                    <button type="button" onclick="selectPrice('$9/mo', this)" class="price-btn border border-[var(--border-default)] rounded-full px-4 py-1.5 text-[12px] font-medium text-secondary hover:text-primary hover:border-white/30 transition-all bg-transparent">
+                        $9/mo
+                    </button>
+                    <button type="button" onclick="selectPrice('$19/mo', this)" class="price-btn border border-white rounded-full px-4 py-1.5 text-[12px] font-medium text-black bg-white transition-all shadow-[0_0_10px_rgba(255,255,255,0.1)]">
+                        $19/mo
+                    </button>
+                    <button type="button" onclick="selectPrice('$49/mo', this)" class="price-btn border border-[var(--border-default)] rounded-full px-4 py-1.5 text-[12px] font-medium text-secondary hover:text-primary hover:border-white/30 transition-all bg-transparent">
+                        $49/mo
+                    </button>
+                    <button type="button" onclick="selectPrice('$99/mo', this)" class="price-btn border border-[var(--border-default)] rounded-full px-4 py-1.5 text-[12px] font-medium text-secondary hover:text-primary hover:border-white/30 transition-all bg-transparent">
+                        $99/mo
+                    </button>
+                    <button type="button" onclick="selectPrice('$99 one-time', this)" class="price-btn border border-[var(--border-default)] rounded-full px-4 py-1.5 text-[12px] font-medium text-secondary hover:text-primary hover:border-white/30 transition-all bg-transparent">
+                        $99 one-time
+                    </button>
+                    <button type="button" onclick="selectPrice('Other', this)" class="price-btn border border-[var(--border-default)] rounded-full px-4 py-1.5 text-[12px] font-medium text-secondary hover:text-primary hover:border-white/30 transition-all bg-transparent">
+                        Other
+                    </button>
+                </div>
+                
+                <div id="other-price-container" class="hidden mt-3">
+                    <input type="text" id="OtherPrice" placeholder="Enter your price (e.g. $500/yr)" 
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary placeholder-white/20 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all"
+                           oninput="document.getElementById('ProposedPrice').value = this.value" />
+                </div>
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <div class="mt-4 pt-4 border-t border-[var(--border-default)]">
+                <button type="submit" class="w-full h-10 bg-white text-black rounded-lg text-[13px] font-semibold hover:bg-gray-100 transition-all flex items-center justify-center gap-2 group shadow-sm">
+                    Submit idea
+                    <svg class="text-gray-400 group-hover:text-black transition-colors group-hover:translate-x-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+                <p class="text-[12px] text-tertiary text-center mt-3">
+                    Your idea goes live immediately. Be honest &mdash; the community will tell you if it's bad.
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function selectPrice(val, btn) {
+        // Reset all buttons to inactive state
+        document.querySelectorAll('.price-btn').forEach(b => {
+            b.className = 'price-btn border border-[var(--border-default)] rounded-full px-4 py-1.5 text-[12px] font-medium text-secondary hover:text-primary hover:border-white/30 transition-all bg-transparent';
+        });
+        
+        // Highlight clicked button to active state
+        btn.className = 'price-btn border border-white rounded-full px-4 py-1.5 text-[12px] font-medium text-black bg-white transition-all shadow-[0_0_10px_rgba(255,255,255,0.1)]';
+        
+        const otherContainer = document.getElementById('other-price-container');
+        const hiddenInput = document.getElementById('ProposedPrice');
+        
+        if (val === 'Other') {
+            otherContainer.classList.remove('hidden');
+            document.getElementById('OtherPrice').focus();
+            hiddenInput.value = document.getElementById('OtherPrice').value;
+        } else {
+            otherContainer.classList.add('hidden');
+            hiddenInput.value = val;
+        }
+    }
+
+    let duplicateCheckTimeout;
+    async function checkDuplicateTitle(title) {
+        if (!title || title.trim().length < 4) {
+            document.getElementById('duplicate-warning').classList.add('hidden');
+            return;
+        }
+        
+        clearTimeout(duplicateCheckTimeout);
+        duplicateCheckTimeout = setTimeout(async () => {
+            try {
+                const response = await fetch('/validate/check-duplicate?title=' + encodeURIComponent(title));
+                const data = await response.json();
+                
+                const warningBox = document.getElementById('duplicate-warning');
+                if (data && data.slug) {
+                    document.getElementById('duplicate-title').innerText = data.similarTitle;
+                    document.getElementById('duplicate-link').href = '/validate/' + data.slug;
+                    warningBox.classList.remove('hidden');
+                } else {
+                    warningBox.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error("Failed to check duplicate", err);
+            }
+        }, 300);
+    }
+</script>

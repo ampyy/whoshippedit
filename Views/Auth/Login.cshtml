@@ -1,0 +1,529 @@
+@model whoshippedit.Models.Auth.LoginViewModel
+@{
+    ViewData["Title"] = "Sign in — WhoShippedIt";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script>
+        (function() {
+            var t = localStorage.getItem('theme');
+            if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Geist', system-ui, -apple-system, sans-serif;
+            background: var(--bg-page);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 480px;
+        }
+
+        @@media (max-width: 768px) {
+            body { grid-template-columns: 1fr; }
+            .auth-left { display: none; }
+        }
+
+        /* ── Left panel ── */
+        .auth-left {
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-default);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 40px;
+        }
+        .auth-left-logo {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            text-decoration: none;
+            letter-spacing: -0.3px;
+        }
+        .auth-left-content {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .auth-left-headline {
+            font-size: 26px;
+            font-weight: 500;
+            color: var(--text-primary);
+            line-height: 1.25;
+            letter-spacing: -0.5px;
+        }
+        .auth-left-subheadline {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .auth-left-footer {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        /* ── Right panel ── */
+        .auth-right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 48px;
+            background: var(--bg-page);
+        }
+        .auth-form-wrap {
+            width: 100%;
+            max-width: 360px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+            animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+        @@keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .auth-mobile-logo {
+            display: none;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        @@media (max-width: 768px) {
+            .auth-right { padding: 32px 24px; justify-content: flex-start; padding-top: 60px; }
+            .auth-mobile-logo { display: block; }
+        }
+
+        .auth-heading { display: flex; flex-direction: column; gap: 6px; }
+        .auth-heading h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; color: var(--text-primary); }
+        .auth-heading p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+        /* Form group */
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-default);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .form-input::placeholder { color: var(--text-tertiary); }
+        .form-input:focus { border-color: var(--border-medium); }
+
+        /* Buttons */
+        .btn-primary {
+            width: 100%;
+            padding: 11px 16px;
+            border-radius: 10px;
+            background: var(--text-primary);
+            color: var(--bg-page);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.1s;
+            letter-spacing: -0.1px;
+        }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-primary:active { transform: scale(0.98); }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 11px 16px;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            border: 1px solid var(--border-default);
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            letter-spacing: -0.1px;
+        }
+        .btn-secondary:hover { background: var(--bg-hover); }
+        .btn-secondary:active { transform: scale(0.98); }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-default);
+        }
+
+        /* Error */
+        .form-error {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.08);
+            font-size: 13px;
+            color: #f87171;
+            line-height: 1.5;
+        }
+
+        /* Check email state */
+        .check-email-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .check-email-hint {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 14px;
+            border-radius: 10px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .footer-note { font-size: 11px; color: var(--text-tertiary); text-align: center; line-height: 1.6; }
+        .footer-note a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 2px; }
+        .footer-note a:hover { color: var(--text-primary); }
+    </style>
+</head>
+<body>
+
+<!-- ── LEFT PANEL ─────────────────────────────────────────── -->
+<aside class="auth-left">
+    <a href="/" class="auth-left-logo">WhoShippedIt</a>
+
+    <div class="auth-left-content">
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <h1 class="auth-left-headline">
+                Discover products worth building with.
+            </h1>
+            <p class="auth-left-subheadline">
+                Explore launches, track trends, and uncover the tools shaping the next generation of software.
+            </p>
+        </div>
+
+        <div style="width:100%; display:flex; justify-content:center;">
+            <!-- Modern dashboard mockup SVG illustration -->
+            <svg width="100%" height="auto" viewBox="0 0 520 340" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius: 8px; border: 0.5px solid var(--border-default); background: var(--bg-surface); overflow: hidden; display: block; shape-rendering: geometricPrecision; text-rendering: geometricPrecision;">
+                <defs>
+                    <clipPath id="window-clip">
+                        <rect x="0.5" y="36.5" width="519" height="303" rx="8" />
+                    </clipPath>
+                </defs>
+
+                <!-- Top Window Bar -->
+                <rect x="0.5" y="0.5" width="519" height="36" rx="8" fill="var(--bg-page)" stroke="var(--border-default)" stroke-width="0.5" />
+                <!-- Subtle line covering bottom corner rounding of top-bar -->
+                <line x1="0.5" y1="36.5" x2="519.5" y2="36.5" stroke="var(--border-default)" stroke-width="0.5" />
+
+                <!-- Window controls (mac style) -->
+                <circle cx="16" cy="18.5" r="3" fill="var(--border-medium)" />
+                <circle cx="26" cy="18.5" r="3" fill="var(--border-default)" />
+                <circle cx="36" cy="18.5" r="3" fill="var(--border-default)" />
+
+                <!-- Search bar address mockup -->
+                <rect x="110" y="8.5" width="300" height="19" rx="4" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="0.5" />
+                <text x="260" y="18" dominant-baseline="central" font-family="Geist" font-size="8.5" font-weight="400" fill="var(--text-secondary)" text-anchor="middle">whoshippedit.com/directory</text>
+
+                <!-- Clip inner content to preserve bottom corner roundings -->
+                <g clip-path="url(#window-clip)">
+                    <!-- Subtle background grid dots inside the window -->
+                    <rect x="0.5" y="36.5" width="519" height="303" fill="var(--bg-surface)" />
+                    <!-- Grid background -->
+                    <path d="M 0 36 L 520 36 M 0 68 L 520 68 M 0 100 L 520 100 M 0 132 L 520 132 M 0 164 L 520 164 M 0 196 L 520 196 M 0 228 L 520 228 M 0 260 L 520 260 M 0 292 L 520 292 M 0 324 L 520 324" stroke="var(--border-default)" stroke-dasharray="2 2" stroke-width="0.5" opacity="0.4" />
+                    <path d="M 130 36 L 130 340 M 162 36 L 162 340 M 194 36 L 194 340 M 226 36 L 226 340 M 258 36 L 258 340 M 290 36 L 290 340 M 322 36 L 322 340 M 354 36 L 354 340 M 386 36 L 386 340 M 418 36 L 418 340 M 450 36 L 450 340 M 482 36 L 482 340" stroke="var(--border-default)" stroke-dasharray="2 2" stroke-width="0.5" opacity="0.4" />
+
+                    <!-- Sidebar panel -->
+                    <rect x="0.5" y="36.5" width="129.5" height="303" fill="var(--bg-page)" />
+                    <line x1="130" y1="36.5" x2="130" y2="339.5" stroke="var(--border-default)" stroke-width="0.5" />
+
+                    <!-- Sidebar links -->
+                    <text x="16" y="58" font-family="Geist" font-size="8" font-weight="500" fill="var(--text-tertiary)" letter-spacing="0.05em">DISCOVER</text>
+
+                    <!-- Active Sidebar item 1 (Directory) -->
+                    <rect x="10" y="66" width="110" height="20" rx="4" fill="var(--bg-hover)" stroke="var(--border-default)" stroke-width="0.5" />
+                    <circle cx="20" cy="76" r="2" fill="var(--accent)" />
+                    <text x="30" y="76" dominant-baseline="central" font-family="Geist" font-size="9" font-weight="500" fill="var(--text-primary)">Directory</text>
+
+                    <!-- Sidebar item 2 (Validate) -->
+                    <circle cx="20" cy="96" r="2" fill="var(--text-tertiary)" />
+                    <text x="30" y="96" dominant-baseline="central" font-family="Geist" font-size="9" font-weight="400" fill="var(--text-secondary)">Validate Ideas</text>
+
+                    <!-- Sidebar item 3 (Verified) -->
+                    <circle cx="20" cy="116" r="2" fill="var(--text-tertiary)" />
+                    <text x="30" y="116" dominant-baseline="central" font-family="Geist" font-size="9" font-weight="400" fill="var(--text-secondary)">Verified SaaS</text>
+
+                    <!-- Sidebar collections heading -->
+                    <text x="16" y="148" font-family="Geist" font-size="8" font-weight="500" fill="var(--text-tertiary)" letter-spacing="0.05em">TRENDS</text>
+
+                    <!-- Sidebar items list -->
+                    <text x="16" y="166" dominant-baseline="central" font-family="Geist" font-size="9" font-weight="400" fill="var(--text-secondary)">Developer Tools</text>
+                    <text x="16" y="186" dominant-baseline="central" font-family="Geist" font-size="9" font-weight="400" fill="var(--text-secondary)">AI Assistants</text>
+                    <text x="16" y="206" dominant-baseline="central" font-family="Geist" font-size="9" font-weight="400" fill="var(--text-secondary)">Productivity</text>
+                    <text x="16" y="226" dominant-baseline="central" font-family="Geist" font-size="9" font-weight="400" fill="var(--text-secondary)">Marketing</text>
+
+                    <!-- Tabs in main area -->
+                    <text x="146" y="52" dominant-baseline="central" font-family="Geist" font-size="9" font-weight="500" fill="var(--text-primary)">Trending Products</text>
+                    <rect x="146" y="60.5" width="76" height="1" fill="var(--accent)" />
+
+                    <text x="242" y="52" dominant-baseline="central" font-family="Geist" font-size="9" font-weight="400" fill="var(--text-secondary)">Recently Launched</text>
+                    <text x="340" y="52" dominant-baseline="central" font-family="Geist" font-size="9" font-weight="400" fill="var(--text-secondary)">Most Discussed</text>
+
+                    <line x1="130" y1="61.5" x2="520" y2="61.5" stroke="var(--border-default)" stroke-width="0.5" />
+
+                    <!-- Product Cards Container -->
+                    <!-- Card 1: Cursor -->
+                    <g transform="translate(146, 70)">
+                        <rect x="0.5" y="0.5" width="359" height="74" rx="6" fill="var(--bg-surface)" stroke="var(--border-medium)" stroke-width="0.5" />
+                        
+                        <rect x="12" y="12" width="24" height="24" rx="4" fill="var(--accent-bg)" stroke="var(--accent-border)" stroke-width="0.5" />
+                        <text x="24" y="24" dominant-baseline="central" font-family="Geist" font-size="12" font-weight="500" fill="var(--accent-text)" text-anchor="middle">C</text>
+
+                        <text x="44" y="18.5" dominant-baseline="central" font-family="Geist" font-size="10.5" font-weight="500" fill="var(--text-primary)">Cursor</text>
+                        
+                        <g transform="translate(84, 13)">
+                            <rect width="38" height="11" rx="2" fill="var(--verified-bg)" stroke="var(--verified-border)" stroke-width="0.5" />
+                            <text x="19" y="5.5" dominant-baseline="central" font-family="Geist" font-size="6" font-weight="500" fill="var(--verified-text)" text-anchor="middle">VERIFIED</text>
+                        </g>
+
+                        <text x="44" y="34.5" dominant-baseline="central" font-family="Geist" font-size="8.5" font-weight="400" fill="var(--text-secondary)">The AI Code Editor. Built to make you productive.</text>
+
+                        <!-- Badges Row -->
+                        <g transform="translate(44, 46)">
+                            <rect width="44" height="14" rx="2" fill="var(--bg-subtle)" stroke="var(--border-default)" stroke-width="0.5" />
+                            <text x="22" y="7" dominant-baseline="central" font-family="Geist" font-size="7.5" font-weight="400" fill="var(--text-secondary)" text-anchor="middle">Dev Tools</text>
+                        </g>
+                        <g transform="translate(94, 46)">
+                            <rect width="46" height="14" rx="2" fill="var(--accent-bg)" stroke="var(--accent-border)" stroke-width="0.5" />
+                            <text x="23" y="7" dominant-baseline="central" font-family="Geist" font-size="7.5" font-weight="500" fill="var(--accent-text)" text-anchor="middle">$1M+ MRR</text>
+                        </g>
+
+                        <!-- Upvote Button -->
+                        <g transform="translate(312, 12)">
+                            <rect width="36" height="18" rx="3" fill="var(--bg-hover)" stroke="var(--border-medium)" stroke-width="0.5" />
+                            <path d="M 9 10 L 12 7 L 15 10 M 12 7 V 12" stroke="var(--text-primary)" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                            <text x="24" y="9" dominant-baseline="central" font-family="Geist" font-size="8.5" font-weight="500" fill="var(--text-primary)" text-anchor="middle">342</text>
+                        </g>
+                    </g>
+
+                    <!-- Card 2: Resend -->
+                    <g transform="translate(146, 154)">
+                        <rect x="0.5" y="0.5" width="359" height="74" rx="6" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="0.5" />
+                        
+                        <rect x="12" y="12" width="24" height="24" rx="4" fill="var(--verified-bg)" stroke="var(--verified-border)" stroke-width="0.5" />
+                        <text x="24" y="24" dominant-baseline="central" font-family="Geist" font-size="12" font-weight="500" fill="var(--verified-text)" text-anchor="middle">R</text>
+
+                        <text x="44" y="18.5" dominant-baseline="central" font-family="Geist" font-size="10.5" font-weight="500" fill="var(--text-primary)">Resend</text>
+                        
+                        <g transform="translate(86, 13)">
+                            <rect width="38" height="11" rx="2" fill="var(--verified-bg)" stroke="var(--verified-border)" stroke-width="0.5" />
+                            <text x="19" y="5.5" dominant-baseline="central" font-family="Geist" font-size="6" font-weight="500" fill="var(--verified-text)" text-anchor="middle">VERIFIED</text>
+                        </g>
+
+                        <text x="44" y="34.5" dominant-baseline="central" font-family="Geist" font-size="8.5" font-weight="400" fill="var(--text-secondary)">Email API for developers. The best deliverability.</text>
+
+                        <!-- Badges Row -->
+                        <g transform="translate(44, 46)">
+                            <rect width="44" height="14" rx="2" fill="var(--bg-subtle)" stroke="var(--border-default)" stroke-width="0.5" />
+                            <text x="22" y="7" dominant-baseline="central" font-family="Geist" font-size="7.5" font-weight="400" fill="var(--text-secondary)" text-anchor="middle">Dev Tools</text>
+                        </g>
+                        <g transform="translate(94, 46)">
+                            <rect width="46" height="14" rx="2" fill="var(--accent-bg)" stroke="var(--accent-border)" stroke-width="0.5" />
+                            <text x="23" y="7" dominant-baseline="central" font-family="Geist" font-size="7.5" font-weight="500" fill="var(--accent-text)" text-anchor="middle">$1M+ MRR</text>
+                        </g>
+
+                        <!-- Upvote Button -->
+                        <g transform="translate(312, 12)">
+                            <rect width="36" height="18" rx="3" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="0.5" />
+                            <path d="M 9 10 L 12 7 L 15 10 M 12 7 V 12" stroke="var(--text-secondary)" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                            <text x="24" y="9" dominant-baseline="central" font-family="Geist" font-size="8.5" font-weight="500" fill="var(--text-secondary)" text-anchor="middle">289</text>
+                        </g>
+                    </g>
+
+                    <!-- Card 3: Cal.com -->
+                    <g transform="translate(146, 238)">
+                        <rect x="0.5" y="0.5" width="359" height="74" rx="6" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="0.5" />
+                        
+                        <rect x="12" y="12" width="24" height="24" rx="4" fill="var(--bg-subtle)" stroke="var(--border-default)" stroke-width="0.5" />
+                        <text x="24" y="24" dominant-baseline="central" font-family="Geist" font-size="12" font-weight="500" fill="var(--text-secondary)" text-anchor="middle">C</text>
+
+                        <text x="44" y="18.5" dominant-baseline="central" font-family="Geist" font-size="10.5" font-weight="500" fill="var(--text-primary)">Cal.com</text>
+                        
+                        <g transform="translate(88, 13)">
+                            <rect width="38" height="11" rx="2" fill="var(--verified-bg)" stroke="var(--verified-border)" stroke-width="0.5" />
+                            <text x="19" y="5.5" dominant-baseline="central" font-family="Geist" font-size="6" font-weight="500" fill="var(--verified-text)" text-anchor="middle">VERIFIED</text>
+                        </g>
+
+                        <text x="44" y="34.5" dominant-baseline="central" font-family="Geist" font-size="8.5" font-weight="400" fill="var(--text-secondary)">The open source scheduling tool for developers.</text>
+
+                        <!-- Badges Row -->
+                        <g transform="translate(44, 46)">
+                            <rect width="50" height="14" rx="2" fill="var(--bg-subtle)" stroke="var(--border-default)" stroke-width="0.5" />
+                            <text x="25" y="7" dominant-baseline="central" font-family="Geist" font-size="7.5" font-weight="400" fill="var(--text-secondary)" text-anchor="middle">Productivity</text>
+                        </g>
+                        <g transform="translate(100, 46)">
+                            <rect width="66" height="14" rx="2" fill="var(--verified-bg)" stroke="var(--verified-border)" stroke-width="0.5" />
+                            <text x="33" y="7" dominant-baseline="central" font-family="Geist" font-size="7.5" font-weight="500" fill="var(--verified-text)" text-anchor="middle">$100k-$1M MRR</text>
+                        </g>
+
+                        <!-- Upvote Button -->
+                        <g transform="translate(312, 12)">
+                            <rect width="36" height="18" rx="3" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="0.5" />
+                            <path d="M 9 10 L 12 7 L 15 10 M 12 7 V 12" stroke="var(--text-secondary)" stroke-width="0.75" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                            <text x="24" y="9" dominant-baseline="central" font-family="Geist" font-size="8.5" font-weight="500" fill="var(--text-secondary)" text-anchor="middle">243</text>
+                        </g>
+                    </g>
+
+                    <!-- Card 4: PostHog (Partially visible/cut off at bottom) -->
+                    <g transform="translate(146, 322)">
+                        <rect x="0.5" y="0.5" width="359" height="74" rx="6" fill="var(--bg-surface)" stroke="var(--border-default)" stroke-width="0.5" />
+                        
+                        <rect x="12" y="12" width="24" height="24" rx="4" fill="var(--accent-bg)" stroke="var(--accent-border)" stroke-width="0.5" />
+                        <text x="24" y="24" dominant-baseline="central" font-family="Geist" font-size="12" font-weight="500" fill="var(--accent-text)" text-anchor="middle">P</text>
+
+                        <text x="44" y="18.5" dominant-baseline="central" font-family="Geist" font-size="10.5" font-weight="500" fill="var(--text-primary)">PostHog</text>
+                        
+                        <g transform="translate(90, 13)">
+                            <rect width="38" height="11" rx="2" fill="var(--verified-bg)" stroke="var(--verified-border)" stroke-width="0.5" />
+                            <text x="19" y="5.5" dominant-baseline="central" font-family="Geist" font-size="6" font-weight="500" fill="var(--verified-text)" text-anchor="middle">VERIFIED</text>
+                        </g>
+
+                        <text x="44" y="34.5" dominant-baseline="central" font-family="Geist" font-size="8.5" font-weight="400" fill="var(--text-secondary)">Product analytics and feature flags.</text>
+                    </g>
+                </g>
+            </svg>
+        </div>
+    </div>
+
+    <p class="auth-left-footer">© 2026 WhoShippedIt. All rights reserved.</p>
+</aside>
+
+<!-- ── RIGHT PANEL ────────────────────────────────────────── -->
+<main class="auth-right">
+    <div class="auth-form-wrap">
+
+        <a href="/" class="auth-mobile-logo">WhoShippedIt</a>
+
+        @if (Model.EmailSent)
+        {
+            <!-- CHECK EMAIL STATE -->
+            <div class="check-email-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+            </div>
+            <div class="auth-heading">
+                <h1>Check your inbox</h1>
+                <p>We sent a sign-in link to <strong style="color:var(--text-primary)">@Model.Email</strong>. It expires in 15 minutes and works only once.</p>
+            </div>
+            <div class="check-email-hint">
+                <span style="font-weight:600;color:var(--text-primary);font-size:13px">Didn't get it?</span>
+                <span>Check your spam folder, then try resending below.</span>
+            </div>
+            <form method="post" action="/auth/login">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Email" value="@Model.Email" />
+                <button type="submit" class="btn-secondary">Resend sign-in link</button>
+            </form>
+            <p class="footer-note">
+                Wrong email? <a href="/auth/login">Start over</a>
+            </p>
+        }
+        else
+        {
+            <!-- LOGIN FORM -->
+            <div class="auth-heading">
+                <h1>Welcome back</h1>
+                <p>Sign in to your account or create one — no password needed to start.</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="form-error">@Model.ErrorMessage</div>
+            }
+
+            <!-- Magic Link -->
+            <form method="post" action="/auth/login" style="display:flex;flex-direction:column;gap:14px">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@Context.Request.Query["returnUrl"]" />
+                <div class="form-group">
+                    <label class="form-label" for="magic-email">Email address</label>
+                    <input id="magic-email" type="email" name="Email" value="@Model.Email"
+                           placeholder="you@example.com" autocomplete="email" required
+                           class="form-input" />
+                </div>
+                <button type="submit" class="btn-primary">
+                    Send sign-in link →
+                </button>
+            </form>
+
+            <div class="divider">or sign in with password</div>
+
+            <!-- Password -->
+            <form method="post" action="/auth/login-password" style="display:flex;flex-direction:column;gap:14px">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@Context.Request.Query["returnUrl"]" />
+                <div class="form-group">
+                    <label class="form-label" for="pw-email">Email address</label>
+                    <input id="pw-email" type="email" name="Email" value="@Model.Email"
+                           placeholder="you@example.com" autocomplete="email"
+                           class="form-input" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="pw-password">Password</label>
+                    <input id="pw-password" type="password" name="Password"
+                           placeholder="Your password" autocomplete="current-password"
+                           class="form-input" />
+                </div>
+                <button type="submit" class="btn-secondary">Sign in with password</button>
+            </form>
+
+            <p class="footer-note">
+                By continuing, you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
+            </p>
+        }
+
+    </div>
+</main>
+
+</body>
+</html>
