@@ -2,9 +2,12 @@ import os
 import json
 import time
 import urllib.parse
+import hashlib
 from datetime import datetime, timezone
 import requests
 import psycopg2
+import boto3
+from botocore.config import Config
 
 # Constants
 API_KEY = "tmrr_4ddf45eb4134f96ccadaa3cea594137b"
@@ -13,6 +16,34 @@ HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 RATE_LIMIT_INTERVAL = 3.0  # 3 seconds between details requests (20 requests/minute)
 LIMIT_STARTUPS = 50        # Limit to 50 startups for verification
 OUTPUT_SQL_FILE = "trustmrr_50_saas.sql"
+
+# Cloudflare R2 Credentials
+R2_ACCOUNT_ID = "1793ba9684fc438a893cc5c062df259b"
+R2_ACCESS_KEY_ID = "ab99c1d5dc3e3838e43f7222fd38c9c3"
+R2_SECRET_ACCESS_KEY = "491a092d79b4f2358031d61be34e6dcaed54a3fde19c2c384b04d3d512824940"
+R2_BUCKET_NAME = "whoshippedit-logos"
+R2_PUBLIC_URL_PREFIX = "https://pub-1793ba9684fc438a893cc5c062df259b.r2.dev"
+
+MIME_TYPES = {
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "webp": "image/webp",
+    "svg": "image/svg+xml"
+}
+
+# Initialize Boto3 client for R2
+try:
+    s3_client = boto3.client(
+        service_name="s3",
+        endpoint_url=f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
+        aws_access_key_id=R2_ACCESS_KEY_ID,
+        aws_secret_access_key=R2_SECRET_ACCESS_KEY,
+        config=Config(signature_version="s3v4"),
+    )
+except Exception as e:
+    print(f"Error initializing R2 boto3 client: {e}")
+    s3_client = None
 
 # Category Mapping (TrustMRR -> Local DB Slug)
 CATEGORY_MAP = {
@@ -155,55 +186,72 @@ def format_sql_array(lst) -> str:
     return f"ARRAY[{', '.join(items)}]::text[]"
 
 def download_logo(logo_url: str, slug: str) -> str:
-    """Download logo image from URL and save it to wwwroot/uploads/logos/"""
+    """Download logo image from URL and upload to Cloudflare R2"""
     if not logo_url:
         return None
+    
+    print(f"  [Logo] Downloading from: {logo_url}")
     try:
-        # Determine path
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "wwwroot", "uploads", "logos"))
-        os.makedirs(base_dir, exist_ok=True)
+        # Download logo bytes
+        res = requests.get(logo_url, timeout=10)
+        res.raise_for_status()
+        content = res.content
+        
+        # Compute md5 hash of content
+        file_hash = hashlib.md5(content).hexdigest()[:8]
         
         # Determine file extension
-        parsed = urllib.parse.urlparse(logo_url)
-        path = parsed.path
-        ext = os.path.splitext(path)[1]
+        # First check response headers
+        content_type = res.headers.get("content-type", "").lower()
+        ext = None
+        if "png" in content_type:
+            ext = "png"
+        elif "jpeg" in content_type or "jpg" in content_type:
+            ext = "jpg"
+        elif "webp" in content_type:
+            ext = "webp"
+        elif "svg" in content_type:
+            ext = "svg"
         
-        # If no extension in URL, query headers for content-type
-        if not ext or len(ext) > 5 or "?" in ext:
-            try:
-                res_head = requests.head(logo_url, timeout=5)
-                content_type = res_head.headers.get("content-type", "")
-                if "png" in content_type:
-                    ext = ".png"
-                elif "jpeg" in content_type or "jpg" in content_type:
-                    ext = ".jpg"
-                elif "svg" in content_type:
-                    ext = ".svg"
-                elif "webp" in content_type:
-                    ext = ".webp"
-                else:
-                    ext = ".png"
-            except:
-                ext = ".png"
-                
-        # Clean extension
+        # Fallback to parsing URL if content-type headers didn't match
+        if not ext:
+            parsed = urllib.parse.urlparse(logo_url)
+            url_path = parsed.path
+            url_ext = os.path.splitext(url_path)[1].lower()
+            if url_ext:
+                ext = url_ext.replace(".", "")
+        
+        # Final fallback to png
+        if not ext or len(ext) > 5:
+            ext = "png"
+            
+        # Clean extension if any query parameters
         if "?" in ext:
             ext = ext.split("?")[0]
             
-        filename = f"{slug}{ext}"
-        local_path = os.path.join(base_dir, filename)
+        # Generate filename: {slug}_{hash}.{ext}
+        filename = f"{slug}_{file_hash}.{ext}"
         
-        # Download and save logo
-        res = requests.get(logo_url, timeout=10)
-        res.raise_for_status()
-        with open(local_path, "wb") as f:
-            f.write(res.content)
+        # Determine S3 ContentType metadata
+        s3_content_type = MIME_TYPES.get(ext, "application/octet-stream")
+        
+        print(f"  [Logo] Uploading '{filename}' to R2 bucket '{R2_BUCKET_NAME}' as '{s3_content_type}'...")
+        if not s3_client:
+            raise Exception("boto3 client not initialized")
             
-        print(f"  Downloaded logo to: /uploads/logos/{filename}")
-        return f"/uploads/logos/{filename}"
+        s3_client.put_object(
+            Bucket=R2_BUCKET_NAME,
+            Key=filename,
+            Body=content,
+            ContentType=s3_content_type
+        )
+        
+        r2_url = f"{R2_PUBLIC_URL_PREFIX}/{filename}"
+        print(f"  [Logo] Uploaded successfully: {r2_url}")
+        return r2_url
     except Exception as e:
-        print(f"  Failed to download logo from {logo_url}: {e}")
-        return logo_url  # Fallback to CDN URL if download fails
+        print(f"  [Logo] Failed to download/upload logo: {e}")
+        return logo_url  # Fallback to CDN URL if download/upload fails
 
 def main():
     # 1. Connect to Neon DB to gather schema metadata
@@ -326,9 +374,9 @@ def main():
                 elif isinstance(t, str):
                     tech_stack.append(t)
                     
-            # Download logo locally
+            # Download and upload logo to R2
             raw_logo_url = startup.get("icon")
-            local_logo_url = download_logo(raw_logo_url, slug)
+            r2_logo_url = download_logo(raw_logo_url, slug)
             
             # Format fields for SQL statement
             sql_slug = escape_sql_string(slug)
@@ -336,7 +384,7 @@ def main():
             sql_name = escape_sql_string(name)
             sql_tagline = escape_sql_string(tagline)
             sql_desc = escape_sql_value(description)
-            sql_logo = escape_sql_value(local_logo_url)
+            sql_logo = escape_sql_value(r2_logo_url)
             sql_web = escape_sql_string(website)
             sql_cat_id = f"'{category_id}'::uuid" if category_id else "NULL"
             sql_tags = format_sql_array([startup.get("category")] if startup.get("category") else None)

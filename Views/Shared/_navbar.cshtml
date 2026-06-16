@@ -20,20 +20,20 @@
             WhoBuiltThis
         </a>
 
-        <!-- Nav links — center (desktop only) -->
-        <div class="hidden md:flex items-center gap-6">
+        <!-- Nav links — right side (desktop only) -->
+        <div class="hidden md:flex items-center gap-6 ml-auto mr-6">
             <a href="/directory"
                class="text-[12px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-150">
                 Directory
             </a>
-            <a href="/verified"
-               class="text-[12px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-150">
-                Verified SaaS
-            </a>
             <a href="/validate"
                class="text-[12px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-150">
-                Validate idea
+                Validate your idea
             </a>
+            <div class="flex items-center gap-1.5 opacity-60 select-none cursor-not-allowed">
+                <span class="text-[12px] text-[var(--text-secondary)] font-medium">Submit SaaS</span>
+                <span class="px-1.5 py-0.5 text-[8px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-md uppercase tracking-wider leading-none">Soon</span>
+            </div>
         </div>
 
         <!-- Right side — sign in + hamburger -->
@@ -142,18 +142,14 @@
                class="text-[13px] text-[var(--text-secondary)] px-3 py-2.5 rounded-[8px] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors duration-150">
                 Directory
             </a>
-            <a href="/verified"
-               class="text-[13px] text-[var(--text-secondary)] px-3 py-2.5 rounded-[8px] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors duration-150">
-                Verified SaaS
-            </a>
-            <a href="#"
-               class="text-[13px] text-[var(--text-secondary)] px-3 py-2.5 rounded-[8px] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors duration-150">
-                Submit
-            </a>
             <a href="/validate"
                class="text-[13px] text-[var(--text-secondary)] px-3 py-2.5 rounded-[8px] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors duration-150">
-                Validate idea
+                Validate your idea
             </a>
+            <div class="flex items-center justify-between px-3 py-2.5 rounded-[8px] opacity-60 select-none cursor-not-allowed">
+                <span class="text-[13px] text-[var(--text-secondary)]">Submit SaaS</span>
+                <span class="px-1.5 py-0.5 text-[8px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-md uppercase tracking-wider leading-none">Soon</span>
+            </div>
             <div class="border-t mt-2 pt-2 flex flex-col gap-0.5">
                 @if (User.Identity?.IsAuthenticated == true)
                 {
