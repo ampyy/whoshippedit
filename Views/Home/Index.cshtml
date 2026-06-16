@@ -1,33 +1,29 @@
+@model List<whoshippedit.Models.Product>
 @{
     ViewData["Title"] = "Directory";
 
-    // Realistic SaaS Data (placeholder examples)
-    var realData = new[] {
-        new { Name = "Stackpilot", Desc = "AI-powered code review that catches bugs before they ship. Built for fast-moving engineering teams.", Founder = "Neel Kapoor", Cat = "Developer Tools", Status = "Verified", Mrr = "$1M+ MRR", Build = 94, Upvotes = 342, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
-        new { Name = "Sendgrid", Desc = "Transactional email infrastructure for modern apps. 99.9% deliverability, zero config.", Founder = "Lena Voss", Cat = "Developer Tools", Status = "Verified", Mrr = "$1M+ MRR", Build = 88, Upvotes = 289, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
-        new { Name = "Metricflow", Desc = "Unified analytics dashboard for product teams. Track funnels, cohorts, and events in real-time.", Founder = "Jason Reeves", Cat = "Analytics", Status = "Verified", Mrr = "$1M+ MRR", Build = 91, Upvotes = 412, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
-        new { Name = "Letterdrop", Desc = "The newsletter growth engine. Built-in monetization, referrals, and audience analytics.", Founder = "Maya Chen", Cat = "Marketing", Status = "Verified", Mrr = "$1M+ MRR", Build = 85, Upvotes = 301, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
-        new { Name = "Formbase", Desc = "Beautiful forms that convert. Drag-and-drop builder with conditional logic and integrations.", Founder = "Eli Brandt", Cat = "Productivity", Status = "Verified", Mrr = "$100k-$1M MRR", Build = 82, Upvotes = 195, MrrClass = "bg-mrr-100k-bg text-verified-text border-verified-border" },
-        new { Name = "Scheduly", Desc = "Smart scheduling for teams and freelancers. Calendar sync, time zones, and custom booking pages.", Founder = "Priya Shah", Cat = "Productivity", Status = "Verified", Mrr = "$100k-$1M MRR", Build = 87, Upvotes = 243, MrrClass = "bg-mrr-100k-bg text-verified-text border-verified-border" },
-        new { Name = "Authwave", Desc = "Drop-in authentication and user management. Passwordless, SSO, and multi-tenant ready.", Founder = "Ryan Torres", Cat = "Developer Tools", Status = "Verified", Mrr = "$1M+ MRR", Build = 89, Upvotes = 320, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
-        new { Name = "Payvault", Desc = "Payments, billing, and tax compliance in one platform. Built for SaaS and digital products.", Founder = "Daria Klein", Cat = "Finance", Status = "Tentative", Mrr = "$100k-$1M MRR", Build = 76, Upvotes = 188, MrrClass = "bg-mrr-100k-bg text-verified-text border-verified-border" },
-        new { Name = "Synthia", Desc = "Generative AI toolkit for creative teams. Create images, copy, and assets at scale.", Founder = "Leo Park", Cat = "AI", Status = "Tentative", Mrr = "$1M+ MRR", Build = 95, Upvotes = 512, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" },
-        new { Name = "Basestack", Desc = "Open-source backend-as-a-service. Postgres, auth, storage, and realtime out of the box.", Founder = "Sofia Andersson", Cat = "Developer Tools", Status = "Verified", Mrr = "$1M+ MRR", Build = 92, Upvotes = 405, MrrClass = "bg-mrr-big-bg text-accent-text border-accent-border" }
-    };
-    
-    var dummyProducts = Enumerable.Range(0, 50).Select(i => {
-        var p = realData[i % realData.Length];
-        return new {
-            Id = i + 1,
-            Name = p.Name, Description = p.Desc, Founder = p.Founder, Category = p.Cat, 
-            Status = p.Status, Mrr = p.Mrr, Build = p.Build, Upvotes = p.Upvotes, MrrClass = p.MrrClass,
-            Initials = p.Name.Substring(0, 1)
-        };
-    }).ToList();
-
     var categories = ViewBag.Categories as List<whoshippedit.Models.Category> ?? new List<whoshippedit.Models.Category>();
+    var totalCount  = (int)(ViewBag.TotalCount ?? 0);
+    var selectedSort = (string)(ViewBag.SelectedSort ?? "latest");
+    var selectedCategory = (string)(ViewBag.SelectedCategory ?? "");
+    var selectedMrr = (string)(ViewBag.SelectedMrr ?? "");
 
-    var recentVerified = realData.Take(8).ToList();
+    // MRR helper: returns (label, cssClasses)
+    static (string Label, string Css) MrrBadge(int? mrr)
+    {
+        if (mrr == null) return ("Unknown", "bg-subtle text-secondary border-default");
+        if (mrr < 1000)   return ("$0–$1k MRR",      "bg-subtle text-secondary border-default");
+        if (mrr < 10000)  return ("$1k–$10k MRR",    "bg-subtle text-secondary border-default");
+        if (mrr < 100000) return ("$10k–$100k MRR",  "bg-mrr-100k-bg text-verified-text border-verified-border");
+        if (mrr < 1000000) return ("$100k–$1M MRR",  "bg-mrr-100k-bg text-verified-text border-verified-border");
+        return ("$1M+ MRR", "bg-mrr-big-bg text-accent-text border-accent-border");
+    }
+
+    static int WouldBuildPct(int yes, int no)
+    {
+        var total = yes + no;
+        return total == 0 ? 0 : (int)Math.Round((double)yes / total * 100);
+    }
 }
 
 <div class="w-full flex flex-col lg:flex-row items-center justify-center min-h-[65vh] py-12 gap-8 lg:gap-4">
@@ -37,7 +33,7 @@
         <!-- Badge -->
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-medium bg-surface text-[12px] text-secondary mb-6">
             <span class="flex w-1.5 h-1.5 rounded-full bg-verified"></span>
-            2,400+ products tracked
+            @totalCount.ToString("N0")+ products tracked
         </div>
 
         <!-- Headline -->
@@ -93,10 +89,10 @@
     <div class="flex items-center gap-4 w-max animate-marquee hover:pause">
         @for (int i = 0; i < 4; i++)
         {
-            @foreach(var cat in new[] {"Analytics", "Developer Tools", "Email", "Marketing", "SEO", "Scheduling", "Forms", "AI Tools", "Finance", "Productivity", "Design"})
+            @foreach(var cat in categories.Take(12))
             {
-                <a href="/category/@cat.ToLower().Replace(" ", "-")" class="inline-block whitespace-nowrap px-6 py-2 rounded-full border border-default bg-surface hover:bg-hover hover:border-medium text-sm font-medium text-secondary hover:text-primary transition-colors shadow-sm">
-                    @cat
+                <a href="/?category=@cat.Slug" class="inline-block whitespace-nowrap px-6 py-2 rounded-full border border-default bg-surface hover:bg-hover hover:border-medium text-sm font-medium text-secondary hover:text-primary transition-colors shadow-sm">
+                    @cat.Name
                 </a>
             }
         }
@@ -110,140 +106,157 @@
     <div class="flex flex-col bg-surface border-y md:border md:border-medium rounded-none shadow-sm w-full">
         
         <!-- Search & Filter Header -->
+        <form method="get" action="/" id="home-filter-form">
         <div class="p-4 border-b border-medium flex flex-col gap-4">
             <!-- Search Input -->
             <div class="relative w-full h-10">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" placeholder="Search 2,400+ products..." class="w-full h-full bg-surface border border-default rounded-lg pl-9 pr-4 text-14 text-primary placeholder-tertiary focus:outline-none focus:border-medium transition-colors" />
+                <input id="home-search" name="search" type="text" value="@ViewBag.Search" placeholder="Search @(totalCount.ToString("N0"))+ products..." class="w-full h-full bg-surface border border-default rounded-lg pl-9 pr-4 text-14 text-primary placeholder-tertiary focus:outline-none focus:border-medium transition-colors" />
             </div>
 
             <!-- Filters -->
             <div class="flex overflow-x-auto hide-scrollbar gap-2 md:grid md:grid-cols-4 w-full">
-                <select class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer relative transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
+                <select id="home-cat" name="category" onchange="document.getElementById('home-filter-form').submit()" class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer relative transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
                     <option value="">Category</option>
-                    <option value="ai">AI</option>
-                    <option value="devtools">Developer Tools</option>
-                    <option value="analytics">Analytics</option>
-                    <option value="productivity">Productivity</option>
-                    <option value="marketing">Marketing</option>
-                    <option value="finance">Finance</option>
-                    <option value="security">Security</option>
-                    <option value="design">Design</option>
+                    @foreach (var cat in categories)
+                    {
+                        if (selectedCategory == cat.Slug)
+                        {
+                            <option value="@cat.Slug" selected>@cat.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@cat.Slug">@cat.Name</option>
+                        }
+                    }
                 </select>
                 
-                <select class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
+                <select id="home-mrr" name="mrr" onchange="document.getElementById('home-filter-form').submit()" class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
                     <option value="">Revenue</option>
-                    <option value="0">Idea</option>
-                    <option value="1k">$0-$1k MRR</option>
-                    <option value="10k">$1k-$10k MRR</option>
-                    <option value="100k">$10k-$100k MRR</option>
-                    <option value="1m">$100k-$1M MRR</option>
-                    <option value="big">$1M+ MRR</option>
+                    @if (selectedMrr == "0") { <option value="0" selected>Idea (no MRR)</option> } else { <option value="0">Idea (no MRR)</option> }
+                    @if (selectedMrr == "1k") { <option value="1k" selected>$0–$1k MRR</option> } else { <option value="1k">$0–$1k MRR</option> }
+                    @if (selectedMrr == "10k") { <option value="10k" selected>$1k–$10k MRR</option> } else { <option value="10k">$1k–$10k MRR</option> }
+                    @if (selectedMrr == "100k") { <option value="100k" selected>$10k–$100k MRR</option> } else { <option value="100k">$10k–$100k MRR</option> }
+                    @if (selectedMrr == "1m") { <option value="1m" selected>$100k–$1M MRR</option> } else { <option value="1m">$100k–$1M MRR</option> }
+                    @if (selectedMrr == "big") { <option value="big" selected>$1M+ MRR</option> } else { <option value="big">$1M+ MRR</option> }
                 </select>
 
-                <select class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
-                    <option value="">Stage</option>
-                    <option value="tentative">Tentative</option>
-                    <option value="validated">Validated</option>
-                    <option value="growing">Growing</option>
-                    <option value="established">Established</option>
-                </select>
+                <div></div>
 
-                <select class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
-                    <option value="latest">Sort: Latest</option>
-                    <option value="trending">Trending</option>
-                    <option value="mrr">Highest MRR</option>
-                    <option value="upvotes">Most Upvoted</option>
-                    <option value="score">Highest Build Score</option>
+                <select id="home-sort" name="sort" onchange="document.getElementById('home-filter-form').submit()" class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
+                    @if (selectedSort == "latest") { <option value="latest" selected>Sort: Latest</option> } else { <option value="latest">Sort: Latest</option> }
+                    @if (selectedSort == "trending") { <option value="trending" selected>Trending</option> } else { <option value="trending">Trending</option> }
+                    @if (selectedSort == "mrr") { <option value="mrr" selected>Highest MRR</option> } else { <option value="mrr">Highest MRR</option> }
+                    @if (selectedSort == "upvotes") { <option value="upvotes" selected>Most Upvoted</option> } else { <option value="upvotes">Most Upvoted</option> }
+                    @if (selectedSort == "score") { <option value="score" selected>Highest Build Score</option> } else { <option value="score">Highest Build Score</option> }
                 </select>
             </div>
 
             <!-- Results Summary Row -->
             <div class="flex items-center justify-between pt-3 border-t border-default mt-1">
-                <span class="text-13 text-primary font-medium px-1">Showing 50 of 2,436 products</span>
+                <span class="text-13 text-primary font-medium px-1">Showing @Model.Count of @totalCount.ToString("N0") products</span>
                 <span class="text-12 text-tertiary px-1">Updated daily</span>
             </div>
         </div>
+        </form>
 
         <!-- Product List -->
-        <div class="flex flex-col">
-            @foreach (var prod in dummyProducts)
+        <div class="flex flex-col" id="home-product-list">
+            @if (Model.Count == 0)
             {
-                <div class="group flex items-start gap-3.5 px-4 md:px-5 py-4 md:py-3 border-b border-medium last:border-b-0 hover:bg-hover transition-colors cursor-pointer">
-                
-                <!-- Logo -->
-                <div class="w-8 h-8 md:w-9 md:h-9 shrink-0 bg-subtle border border-medium rounded-md flex items-center justify-center text-base md:text-lg font-medium text-primary mt-0.5">
-                    @prod.Initials
+                <div class="flex flex-col items-center justify-center py-20 text-center border-b border-default">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-tertiary mb-3"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <h3 class="text-[14px] font-medium text-primary mb-1">No products found</h3>
+                    <p class="text-[13px] text-secondary">Try changing your filters or search terms.</p>
                 </div>
-
-                <!-- Info Column -->
-                <div class="flex flex-col flex-1 min-w-0">
+            }
+            else
+            {
+                @foreach (var prod in Model)
+                {
+                    var (mrrLabel, mrrCss) = MrrBadge(prod.Mrr);
+                    var buildPct = WouldBuildPct(prod.WouldBuildYes, prod.WouldBuildNo);
+                    var initial = string.IsNullOrEmpty(prod.Name) ? "?" : prod.Name.Substring(0, 1).ToUpper();
+                    <a href="/directory/tool/@prod.Slug" class="group flex items-start gap-3.5 px-4 md:px-5 py-4 md:py-3 border-b border-medium last:border-b-0 hover:bg-hover transition-colors cursor-pointer">
                     
-                    <!-- 1. Name & Badges Row (Merged to save height) -->
-                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
-                        <h3 class="text-base md:text-lg font-semibold text-primary truncate mr-1">@prod.Name</h3>
-                        
-                        @if (prod.Status == "Verified")
+                    <!-- Logo -->
+                    <div class="w-8 h-8 md:w-9 md:h-9 shrink-0 bg-subtle border border-medium rounded-md flex items-center justify-center text-base md:text-lg font-medium text-primary mt-0.5 overflow-hidden">
+                        @if (!string.IsNullOrEmpty(prod.LogoUrl))
                         {
-                            <span class="inline-flex items-center gap-1 px-1.5 py-[1px] rounded bg-verified-bg text-verified-text border border-verified-border text-10 uppercase font-semibold tracking-wide">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                Verified
-                            </span>
+                            <img src="@prod.LogoUrl" alt="@prod.Name" class="w-full h-full object-cover" loading="lazy" />
                         }
                         else
                         {
-                            <span class="px-1.5 py-[1px] rounded bg-subtle text-secondary border border-default text-10 uppercase font-semibold tracking-wide">
-                                Tentative
-                            </span>
+                            @initial
                         }
-                        
-                        <span class="px-1.5 py-[1px] rounded border text-10 uppercase font-semibold tracking-wide @prod.MrrClass">
-                            @prod.Mrr
-                        </span>
-
-                        <span class="px-1.5 py-[1px] rounded bg-subtle text-secondary border border-default text-10 uppercase font-semibold tracking-wide">
-                            @prod.Category
-                        </span>
                     </div>
 
-                    <!-- 2. Description -->
-                    <p class="text-13 md:text-14 text-primary/80 line-clamp-1 md:line-clamp-2 leading-snug mb-1.5 max-w-[800px]">@prod.Description</p>
-                    
-                    <!-- 3. Metadata & Metrics Row -->
-                    <div class="flex flex-wrap items-center justify-between gap-2 mt-auto">
-                        <div class="text-11 md:text-12 text-tertiary font-medium">
-                            by @prod.Founder
-                        </div>
+                    <!-- Info Column -->
+                    <div class="flex flex-col flex-1 min-w-0">
                         
-                        <div class="flex items-center gap-2 text-11 md:text-12 text-tertiary font-medium">
-                            <span>@prod.Build% would build</span>
-                            <span class="text-border-medium">•</span>
-                            <span class="flex items-center gap-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
-                                @prod.Upvotes
+                        <!-- 1. Name & Badges Row -->
+                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
+                            <h3 class="text-base md:text-[15px] font-semibold text-primary truncate mr-1">@prod.Name</h3>
+                            
+                            @if (prod.IsVerified)
+                            {
+                                <span class="inline-flex items-center gap-1 px-1.5 py-[1px] rounded bg-verified-bg text-verified-text border border-verified-border text-10 uppercase font-semibold tracking-wide">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                    Verified
+                                </span>
+                            }
+                            
+                            <span class="px-1.5 py-[1px] rounded border text-10 uppercase font-semibold tracking-wide @mrrCss">
+                                @mrrLabel
                             </span>
+
+                            @if (!string.IsNullOrEmpty(prod.CategoryName))
+                            {
+                                <span class="px-1.5 py-[1px] rounded bg-subtle text-secondary border border-default text-10 uppercase font-semibold tracking-wide">
+                                    @prod.CategoryName
+                                </span>
+                            }
                         </div>
+
+                        <!-- 2. Description -->
+                        <p class="text-13 md:text-14 text-primary/80 line-clamp-1 md:line-clamp-2 leading-snug mb-1.5 max-w-[800px]">@(prod.Description ?? prod.Tagline)</p>
+                        
+                        <!-- 3. Metadata & Metrics Row -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 mt-auto">
+                            <div class="text-11 md:text-12 text-tertiary font-medium">
+                                @if (!string.IsNullOrEmpty(prod.FounderName))
+                                {
+                                    <span>by @prod.FounderName</span>
+                                }
+                            </div>
+                            
+                            <div class="flex items-center gap-2 text-11 md:text-12 text-tertiary font-medium">
+                                @if (prod.WouldBuildYes + prod.WouldBuildNo > 0)
+                                {
+                                    <span>@buildPct% would build</span>
+                                    <span class="text-border-medium">•</span>
+                                }
+                                <span class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+                                    @prod.UpvoteCount
+                                </span>
+                            </div>
+                        </div>
+
                     </div>
-
-                </div>
-            </div>
-        }
-    </div>
-
-    <!-- Empty State Example (Hidden normally) -->
-    <!--
-    <div class="flex flex-col items-center justify-center py-20 text-center border-b border-default">
-        <h3 class="text-[14px] font-medium text-primary mb-1">No products found</h3>
-        <p class="text-[13px] text-secondary">Try changing your filters or search terms.</p>
-    </div>
-    -->
+                </a>
+                }
+            }
+        </div>
 
     <!-- Load More -->
     <div class="flex justify-center mt-8 pb-16 mb-8">
         <a href="/directory" class="px-6 py-2.5 bg-surface border border-default text-primary rounded-lg text-sm font-medium hover:bg-hover hover:border-medium transition-colors shadow-sm inline-flex items-center justify-center">
-            Load more products
+            See all products in Directory →
         </a>
     </div>
+</div>
+
 </div>
 
 <!-- Categories Grid -->
@@ -252,7 +265,7 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @foreach(var cat in categories.Take(8))
         {
-            <a href="/category/@cat.Slug" class="group flex flex-col bg-page border border-default hover:border-medium rounded-xl overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5">
+            <a href="/directory?category=@cat.Slug" class="group flex flex-col bg-page border border-default hover:border-medium rounded-xl overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5">
                 <div class="h-24 w-full relative bg-surface border-b border-default overflow-hidden">
                     <img src="https://picsum.photos/seed/cat-@(cat.Slug)/300/200" alt="@cat.Name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                     <!-- gradient overlay -->
@@ -271,64 +284,6 @@
         <a href="/categories" class="px-6 py-2.5 bg-surface border border-default text-primary rounded-lg text-sm font-medium hover:bg-hover hover:border-medium transition-colors shadow-sm inline-flex items-center justify-center">
             Load more categories
         </a>
-    </div>
-</div>
-
-<!-- Recently Verified (4x2) — Coming Soon -->
-<div class="w-full max-w-5xl mx-auto px-6 mb-24 mt-8 relative">
-    <!-- ── Coming Soon Overlay ──────────────────────────────────────────────── -->
-    <div class="absolute inset-0 z-20 flex items-center justify-center rounded-2xl" style="backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); background: rgba(var(--bg-page-rgb, 10,10,10), 0.55);">
-        <div class="flex flex-col items-center gap-3">
-            <!-- Pulsing dot -->
-            <span class="relative flex h-3 w-3">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </span>
-            <!-- Badge -->
-            <span class="px-5 py-2 rounded-full bg-surface/80 border border-medium text-primary text-sm font-semibold tracking-wide shadow-lg backdrop-blur-md">
-                Coming Soon
-            </span>
-            <span class="text-xs text-tertiary max-w-[240px] text-center leading-relaxed">Verified product profiles are launching soon. Stay tuned.</span>
-        </div>
-    </div>
-
-    <!-- ── Disabled content underneath ──────────────────────────────────────── -->
-    <div class="pointer-events-none select-none opacity-40">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-semibold text-primary tracking-tight">Recently Verified</h2>
-            <span class="text-sm font-medium text-link">View all &rarr;</span>
-        </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            @foreach (var prod in recentVerified)
-            {
-                <div class="group flex flex-col bg-page border border-default rounded-xl p-4">
-                    <div class="flex items-start gap-3 mb-3">
-                        <div class="w-10 h-10 rounded-lg bg-surface border border-default flex items-center justify-center shrink-0 overflow-hidden">
-                            <img src="https://picsum.photos/seed/logo-@(prod.Name.Replace(" ", ""))/100/100" alt="@prod.Name logo" class="w-full h-full object-cover" loading="lazy" />
-                        </div>
-                        <div class="flex flex-col min-w-0">
-                            <div class="flex items-center gap-1.5">
-                                <h3 class="text-sm font-semibold text-primary truncate">@prod.Name</h3>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-verified-text shrink-0"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            </div>
-                            <span class="text-[11px] text-tertiary truncate">@prod.Cat</span>
-                        </div>
-                    </div>
-                    <p class="text-xs text-secondary line-clamp-2 mb-4 leading-relaxed flex-1">@prod.Desc</p>
-                    <div class="flex items-center justify-between mt-auto pt-4 border-t border-default">
-                        <span class="text-[11px] text-tertiary font-medium">by @prod.Founder</span>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold @prod.MrrClass whitespace-nowrap">@prod.Mrr</span>
-                    </div>
-                </div>
-            }
-        </div>
-
-        <!-- Load More (disabled placeholder) -->
-        <div class="flex justify-center mt-8">
-            <span class="px-6 py-2.5 bg-surface border border-default text-primary rounded-lg text-sm font-medium shadow-sm inline-flex items-center justify-center">
-                Load more verified products
-            </span>
-        </div>
     </div>
 </div>
 
@@ -356,6 +311,12 @@
 
 @section Scripts {
     <script>
+        // Search form submit on Enter
+        document.getElementById('home-search')?.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') document.getElementById('home-filter-form').submit();
+        });
+
+        // Ecosystem animation
         document.addEventListener('DOMContentLoaded', () => {
             const container = document.getElementById('ecosystem-container');
             const nodesContainer = document.getElementById('nodes-container');
@@ -402,7 +363,6 @@
             const nodes = [];
             const dummyCount = 45;
 
-            // Generate dummy nodes (noise)
             for (let i = 0; i < dummyCount; i++) {
                 const el = document.createElement('div');
                 el.className = 'absolute top-0 left-0 rounded-full transition-opacity duration-1000 ease-out bg-subtle border border-default';
@@ -412,10 +372,8 @@
                 nodesContainer.appendChild(el);
 
                 nodes.push({
-                    el,
-                    isDummy: true,
-                    cx: Math.random(),
-                    cy: Math.random(),
+                    el, isDummy: true,
+                    cx: Math.random(), cy: Math.random(),
                     ox: (Math.random() - 0.5) * 100,
                     oy: (Math.random() - 0.5) * 100,
                     phaseX: Math.random() * Math.PI * 2,
@@ -424,21 +382,17 @@
                     speedY: 0.0001 + Math.random() * 0.0001,
                     driftX: 10 + Math.random() * 20,
                     driftY: 10 + Math.random() * 20,
-                    baseOpacity: 0.15 + Math.random() * 0.2 // 15% to 35% opacity natively
+                    baseOpacity: 0.15 + Math.random() * 0.2
                 });
             }
 
-            // Generate signal nodes (SaaS products)
             queries.forEach((query, qIdx) => {
                 query.products.forEach(prod => {
                     const el = document.createElement('div');
-                    // Start in dot state
                     el.className = 'absolute top-0 left-0 bg-subtle border border-default rounded-full overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-sm';
                     el.style.width = '6px';
                     el.style.height = '6px';
                     el.style.opacity = '0.3';
-                    
-                    // Inner content (hidden initially)
                     el.innerHTML = `
                         <div class="inner-content absolute inset-0 p-2.5 w-[140px] flex flex-col gap-1.5 opacity-0 transition-opacity duration-300">
                             <div class="text-[13px] font-medium text-primary whitespace-nowrap overflow-hidden text-ellipsis">${prod.name}</div>
@@ -448,17 +402,10 @@
                             </div>
                         </div>
                     `;
-
                     nodesContainer.appendChild(el);
-
                     nodes.push({
-                        el,
-                        isDummy: false,
-                        queryIndex: qIdx,
-                        cx: prod.cx,
-                        cy: prod.cy,
-                        ox: prod.ox,
-                        oy: prod.oy,
+                        el, isDummy: false, queryIndex: qIdx,
+                        cx: prod.cx, cy: prod.cy, ox: prod.ox, oy: prod.oy,
                         phaseX: Math.random() * Math.PI * 2,
                         phaseY: Math.random() * Math.PI * 2,
                         speedX: 0.0001 + Math.random() * 0.0001,
@@ -470,136 +417,75 @@
                 });
             });
 
-            // Animation Loop
-            let frame;
-            let activeQueryIndex = -1; // -1 means no active reveal
-            let isTyping = false;
-            let currentText = "";
-            let targetText = "";
-            let charIndex = 0;
+            let activeQueryIndex = -1;
 
             function animateNodes() {
                 const now = Date.now();
                 const rect = container.getBoundingClientRect();
-                const cw = rect.width;
-                const ch = rect.height;
-
+                const cw = rect.width, ch = rect.height;
                 nodes.forEach(n => {
                     const dx = Math.sin(now * n.speedX + n.phaseX) * n.driftX;
                     const dy = Math.cos(now * n.speedY + n.phaseY) * n.driftY;
-                    
                     const x = (cw * n.cx) + n.ox + dx;
                     const y = (ch * n.cy) + n.oy + dy;
-
-                    // Size and offset handling
-                    let elW = 6;
-                    let elH = 6;
-                    
-                    if (!n.isDummy && activeQueryIndex === n.queryIndex) {
-                        elW = 140;
-                        elH = 62;
-                    }
-
+                    let elW = 6, elH = 6;
+                    if (!n.isDummy && activeQueryIndex === n.queryIndex) { elW = 140; elH = 62; }
                     n.el.style.transform = `translate(${x - elW/2}px, ${y - elH/2}px)`;
-
-                    // Opacity handling based on state
                     if (activeQueryIndex !== -1) {
-                        // A query is active
-                        if (n.isDummy || n.queryIndex !== activeQueryIndex) {
-                            n.el.style.opacity = '0.05'; // Noise dims out
-                        } else {
-                            n.el.style.opacity = '1'; // Active signal nodes go fully opaque
-                        }
+                        n.el.style.opacity = (n.isDummy || n.queryIndex !== activeQueryIndex) ? '0.05' : '1';
                     } else {
-                        // Idle state
                         n.el.style.opacity = n.baseOpacity;
                     }
                 });
-
-                frame = requestAnimationFrame(animateNodes);
+                requestAnimationFrame(animateNodes);
             }
-
             animateNodes();
 
-            // Sequence State Machine
             let sequenceStep = 0;
-
             async function runSequence() {
-                // 1. Idle (Wait a bit)
                 await sleep(1500);
-
                 const q = queries[sequenceStep];
-                targetText = q.text;
-                
-                // 2. Type out query
+                const targetText = q.text;
                 searchCursor.classList.remove('cursor-blink');
-                isTyping = true;
                 for (let i = 0; i <= targetText.length; i++) {
                     searchText.innerText = targetText.substring(0, i);
-                    await sleep(15 + Math.random() * 20); // Faster typing speed
+                    await sleep(15 + Math.random() * 20);
                 }
-                isTyping = false;
                 searchCursor.classList.add('cursor-blink');
-                
-                // 3. Resolve (Dim noise, expand signal)
-                await sleep(200); // Shorter pause before executing search
+                await sleep(200);
                 activeQueryIndex = sequenceStep;
-
-                // Expand specific nodes
                 nodes.forEach(n => {
                     if (!n.isDummy && n.queryIndex === activeQueryIndex) {
-                        n.el.style.width = '140px';
-                        n.el.style.height = '62px';
+                        n.el.style.width = '140px'; n.el.style.height = '62px';
                         n.el.style.borderRadius = '8px';
                         n.el.classList.add('border-medium', 'bg-surface');
                         n.el.classList.remove('border-default', 'bg-subtle');
-                        
-                        // Fade in inner content after slight delay
-                        setTimeout(() => {
-                            const inner = n.el.querySelector('.inner-content');
-                            if (inner) inner.style.opacity = '1';
-                        }, 150); // Faster fade in
+                        setTimeout(() => { const inner = n.el.querySelector('.inner-content'); if (inner) inner.style.opacity = '1'; }, 150);
                     }
                 });
-
-                // 4. Hold
-                await sleep(2500); // Shorter hold time
-
-                // 5. Reset
+                await sleep(2500);
                 nodes.forEach(n => {
                     if (!n.isDummy && n.queryIndex === activeQueryIndex) {
                         const inner = n.el.querySelector('.inner-content');
                         if (inner) inner.style.opacity = '0';
-                        
-                        n.el.style.width = '6px';
-                        n.el.style.height = '6px';
+                        n.el.style.width = '6px'; n.el.style.height = '6px';
                         n.el.style.borderRadius = '9999px';
                         n.el.classList.remove('border-medium', 'bg-surface');
                         n.el.classList.add('border-default', 'bg-subtle');
                     }
                 });
-
-                activeQueryIndex = -1; // Reset opacity of all nodes
-
-                // Backspace query
-                await sleep(400); // Shorter pause before backspacing
+                activeQueryIndex = -1;
+                await sleep(400);
                 searchCursor.classList.remove('cursor-blink');
                 while (searchText.innerText.length > 0) {
                     searchText.innerText = searchText.innerText.slice(0, -1);
-                    await sleep(8); // Faster backspace
+                    await sleep(8);
                 }
                 searchCursor.classList.add('cursor-blink');
-
-                // Loop
                 sequenceStep = (sequenceStep + 1) % queries.length;
                 runSequence();
             }
-
-            function sleep(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-
-            // Start sequence
+            function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
             searchCursor.classList.add('cursor-blink');
             runSequence();
         });

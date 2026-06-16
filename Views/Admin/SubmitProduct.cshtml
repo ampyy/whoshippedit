@@ -104,6 +104,14 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- FIELD: Data Source URL -->
+                <div class="flex flex-col group">
+                    <label class="text-[12px] font-medium text-secondary mb-1.5 group-focus-within:text-primary transition-colors" for="DataSourceUrl">Data Source URL</label>
+                    <input type="url" id="DataSourceUrl" name="DataSourceUrl" value="@Model.DataSourceUrl" 
+                           placeholder="e.g. https://github.com/profile" 
+                           class="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-white/[0.02] text-[13px] text-primary placeholder-white/20 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" />
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -396,7 +404,7 @@
     form.addEventListener('submit', function (e) {
         clearError();
         const errors = [];
-        const fields = ['Name', 'WebsiteUrl', 'Tagline', 'FoundedYear', 'Mrr', 'Arr', 'PriceFrom', 'PriceTo'];
+        const fields = ['Name', 'WebsiteUrl', 'Tagline', 'FoundedYear', 'Mrr', 'Arr', 'PriceFrom', 'PriceTo', 'DataSourceUrl'];
         fields.forEach(id => highlightField(id, false));
 
         const name = document.getElementById('Name').value.trim();
@@ -406,6 +414,9 @@
         const website = document.getElementById('WebsiteUrl').value.trim();
         if (!website) { errors.push('Website URL is required.'); highlightField('WebsiteUrl', true); }
         else if (!isValidUrl(website)) { errors.push('Website URL must be a valid URL (e.g. https://stripe.com).'); highlightField('WebsiteUrl', true); }
+
+        const dataSource = document.getElementById('DataSourceUrl').value.trim();
+        if (dataSource !== '' && !isValidUrl(dataSource)) { errors.push('Data Source URL must be a valid URL.'); highlightField('DataSourceUrl', true); }
 
         const tagline = document.getElementById('Tagline').value.trim();
         if (!tagline) { errors.push('Tagline is required.'); highlightField('Tagline', true); }

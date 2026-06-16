@@ -195,7 +195,7 @@
         {
             <div class="flex flex-col gap-3 mb-10">
                 <textarea id="main-comment-input" rows="3" placeholder="What do you think about this idea?..." class="w-full p-4 rounded-md border border-default bg-surface text-13 text-primary placeholder-tertiary focus:outline-none focus:border-strong transition-all resize-none shadow-sm"></textarea>
-                <button onclick="submitComment(null)" class="self-end px-5 py-2.5 bg-primary text-page rounded-md text-13 font-medium hover:opacity-90 shadow-sm transition-all">Post comment</button>
+                <button onclick="submitComment(null, this)" class="self-end px-5 py-2.5 bg-primary text-page rounded-md text-13 font-medium hover:opacity-90 shadow-sm transition-all">Post comment</button>
             </div>
         }
         else
@@ -233,10 +233,12 @@
                             }
                             @if (replies.Any())
                             {
-                                <div class="flex flex-col gap-3 mt-3 pl-4 border-l-2 border-default">
-                                    @foreach (var reply in replies)
+                                <div class="flex flex-col gap-3 mt-3 pl-4 border-l-2 border-default replies-container" id="replies-container-@comment.Id">
+                                    @for (var i = 0; i < replies.Count; i++)
                                     {
-                                        <div class="flex gap-3" id="comment-@reply.Id">
+                                        var reply = replies[i];
+                                        var isHidden = i >= 3;
+                                        <div class="flex gap-3 reply-item @(isHidden ? "hidden" : "")" id="comment-@reply.Id">
                                             <div class="w-6 h-6 rounded-full bg-subtle border border-default flex items-center justify-center text-[10px] font-bold text-primary shrink-0 uppercase">
                                                 @(!string.IsNullOrEmpty(reply.UserName) ? reply.UserName.Substring(0, 1) : "A")
                                             </div>
@@ -253,6 +255,12 @@
                                             </div>
                                         </div>
                                     }
+                                    @if (replies.Count > 3)
+                                    {
+                                        <button onclick="showAllReplies('@comment.Id', this)" class="text-11 text-accent hover:underline font-medium self-start mt-1 show-more-replies-btn">
+                                            Show @(replies.Count - 3) more replies
+                                        </button>
+                                    }
                                 </div>
                             }
                             
@@ -261,7 +269,7 @@
                                 <textarea id="reply-input-@comment.Id" rows="2" placeholder="Write a reply..." class="w-full p-2.5 rounded-lg border border-default bg-surface text-12 text-primary placeholder:text-tertiary focus:outline-none focus:border-strong transition-colors resize-none shadow-sm"></textarea>
                                 <div class="flex justify-end gap-2">
                                     <button onclick="hideReplyBox('@comment.Id')" class="px-3 py-1.5 rounded-lg border border-default bg-surface hover:bg-hover text-11 font-medium text-secondary transition-colors">Cancel</button>
-                                    <button onclick="submitComment('@comment.Id')" class="px-3 py-1.5 rounded-lg bg-primary text-page hover:opacity-90 text-11 font-medium transition-colors">Reply</button>
+                                    <button onclick="submitComment('@comment.Id', this)" class="px-3 py-1.5 rounded-lg bg-primary text-page hover:opacity-90 text-11 font-medium transition-colors">Reply</button>
                                 </div>
                             </div>
                         </div>
@@ -299,13 +307,51 @@
         }
     }
 
-    async function submitComment(parentId) {
+    const activeSubmissions = {};
+
+    function showAllReplies(commentId, btnElement) {
+        const container = document.getElementById(`replies-container-${commentId}`);
+        if (container) {
+            const hiddenReplies = container.querySelectorAll('.reply-item.hidden');
+            hiddenReplies.forEach(reply => reply.classList.remove('hidden'));
+        }
+        if (btnElement) {
+            btnElement.remove();
+        }
+    }
+
+    async function submitComment(parentId, btn) {
+        const key = parentId || 'main';
+        if (activeSubmissions[key]) return;
+
         const inputId = parentId ? `reply-input-${parentId}` : 'main-comment-input';
         const textarea = document.getElementById(inputId);
         if (!textarea) return;
 
         const bodyText = textarea.value.trim();
         if (!bodyText) return;
+
+        activeSubmissions[key] = true;
+
+        let submitBtn = btn;
+        if (!submitBtn) {
+            if (parentId) {
+                const replyBox = document.getElementById(`reply-box-${parentId}`);
+                if (replyBox) {
+                    submitBtn = Array.from(replyBox.querySelectorAll('button')).find(b => b.textContent.includes('Reply'));
+                }
+            } else {
+                submitBtn = document.querySelector('button[onclick*="submitComment(null"]');
+            }
+        }
+
+        const originalText = submitBtn ? submitBtn.innerText : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            submitBtn.style.cursor = 'not-allowed';
+            submitBtn.innerText = parentId ? 'Replying...' : 'Posting...';
+        }
 
         try {
             const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -345,6 +391,14 @@
         } catch (error) {
             console.error("Error posting comment:", error);
             alert("An unexpected error occurred while posting your comment.");
+        } finally {
+            activeSubmissions[key] = false;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '';
+                submitBtn.style.cursor = '';
+                submitBtn.innerText = originalText || (parentId ? 'Reply' : 'Post comment');
+            }
         }
     }
 
@@ -359,16 +413,17 @@
             const replyBoxDiv = document.getElementById(`reply-box-${comment.parentId}`);
             
             // Check if replies container already exists
-            let repliesDiv = contentCol.querySelector('.border-l-2');
+            let repliesDiv = contentCol.querySelector('.replies-container');
             if (!repliesDiv) {
                 repliesDiv = document.createElement('div');
-                repliesDiv.className = 'flex flex-col gap-3 mt-3 pl-4 border-l-2 border-default';
+                repliesDiv.id = `replies-container-${comment.parentId}`;
+                repliesDiv.className = 'flex flex-col gap-3 mt-3 pl-4 border-l-2 border-default replies-container';
                 // Insert before the reply box
                 contentCol.insertBefore(repliesDiv, replyBoxDiv);
             }
 
             const replyHTML = `
-                <div class="flex gap-3" id="comment-${comment.id}">
+                <div class="flex gap-3 reply-item" id="comment-${comment.id}">
                     <div class="w-6 h-6 rounded-full bg-subtle border border-default flex items-center justify-center text-[10px] font-bold text-primary shrink-0 uppercase">
                         ${comment.userInitial}
                     </div>
@@ -381,7 +436,13 @@
                     </div>
                 </div>
             `;
-            repliesDiv.insertAdjacentHTML('beforeend', replyHTML);
+            
+            const showMoreBtn = repliesDiv.querySelector('.show-more-replies-btn');
+            if (showMoreBtn) {
+                showMoreBtn.insertAdjacentHTML('beforebegin', replyHTML);
+            } else {
+                repliesDiv.insertAdjacentHTML('beforeend', replyHTML);
+            }
             
             hideReplyBox(comment.parentId);
         } else {
@@ -410,7 +471,7 @@
                             <textarea id="reply-input-${comment.id}" rows="2" placeholder="Write a reply..." class="w-full p-2.5 rounded-lg border border-default bg-surface text-12 text-primary placeholder:text-tertiary focus:outline-none focus:border-strong transition-colors resize-none shadow-sm"></textarea>
                             <div class="flex justify-end gap-2">
                                 <button onclick="hideReplyBox('${comment.id}')" class="px-3 py-1.5 rounded-lg border border-default bg-surface hover:bg-hover text-11 font-medium text-secondary transition-colors">Cancel</button>
-                                <button onclick="submitComment('${comment.id}')" class="px-3 py-1.5 rounded-lg bg-primary text-page hover:opacity-90 text-11 font-medium transition-colors">Reply</button>
+                                <button onclick="submitComment('${comment.id}', this)" class="px-3 py-1.5 rounded-lg bg-primary text-page hover:opacity-90 text-11 font-medium transition-colors">Reply</button>
                             </div>
                         </div>
                     </div>

@@ -7,19 +7,38 @@ public class HomeController : Controller
 {
     private readonly ICategoryService _categoryService;
     private readonly IUserService _userService;
+    private readonly IProductService _productService;
 
-    public HomeController(ICategoryService categoryService, IUserService userService)
+    public HomeController(ICategoryService categoryService, IUserService userService, IProductService productService)
     {
         _categoryService = categoryService;
         _userService = userService;
+        _productService = productService;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(
+        string? search = null,
+        string? category = null,
+        string? mrr = null,
+        string? sort = null)
     {
         var categories = await _categoryService.GetCategoriesAsync();
         ViewBag.Categories = categories.ToList();
-        
-        return View();
+
+        var (products, totalCount) = await _productService.GetProductsAsync(
+            search: search,
+            categorySlug: category,
+            mrr: mrr,
+            sort: sort,
+            pageSize: 50);
+
+        ViewBag.TotalCount = totalCount;
+        ViewBag.Search = search;
+        ViewBag.SelectedCategory = category;
+        ViewBag.SelectedMrr = mrr;
+        ViewBag.SelectedSort = sort ?? "latest";
+
+        return View(products);
     }
 
     [HttpGet("verified")]

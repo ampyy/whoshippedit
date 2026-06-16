@@ -16,6 +16,16 @@ public class ProductService : IProductService
     public Task<Product?> GetBySlugAsync(string slug)
         => _productRepo.GetBySlugAsync(slug);
 
+    public Task<(List<Product> Items, int TotalCount)> GetProductsAsync(
+        string? search = null,
+        string? categorySlug = null,
+        string? mrr = null,
+        string? country = null,
+        string? sort = null,
+        int page = 1,
+        int pageSize = 50)
+        => _productRepo.GetProductsAsync(search, categorySlug, mrr, country, sort, page, pageSize);
+
     public async Task<Guid> SubmitProductAsync(Product product, Guid addedBy)
     {
         var slug = GenerateSlug(product.Name);
@@ -66,5 +76,25 @@ public class ProductService : IProductService
         {
             return url.ToLower(); // fallback
         }
+    }
+
+    public Task<short?> GetUserWouldBuildVoteAsync(Guid productId, Guid userId)
+        => _productRepo.GetUserWouldBuildVoteAsync(productId, userId);
+
+    public async Task<bool> VoteWouldBuildAsync(string slug, Guid userId, short voteType)
+    {
+        var product = await _productRepo.GetBySlugAsync(slug);
+        if (product == null) return false;
+
+        var existingVote = await _productRepo.GetUserWouldBuildVoteAsync(product.Id, userId);
+        if (existingVote.HasValue && existingVote.Value == voteType)
+        {
+            await _productRepo.DeleteWouldBuildVoteAsync(product.Id, userId);
+        }
+        else
+        {
+            await _productRepo.UpsertWouldBuildVoteAsync(product.Id, userId, voteType);
+        }
+        return true;
     }
 }

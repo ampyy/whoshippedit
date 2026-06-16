@@ -269,3 +269,21 @@ DROP TRIGGER IF EXISTS trg_building_count ON idea_votes;
 create trigger trg_building_count
 after insert or delete on idea_votes
 for each row execute function sync_building_count();
+
+-- 13. Add data_source_url and updated_at to products
+alter table products add column if not exists data_source_url text;
+alter table products add column if not exists updated_at timestamptz default now();
+
+-- auto-update updated_at on any change
+create or replace function update_updated_at()
+returns trigger as $$
+begin
+  NEW.updated_at = now();
+  return NEW;
+end;
+$$ language plpgsql;
+
+DROP TRIGGER IF EXISTS trg_updated_at ON products;
+create trigger trg_updated_at
+before update on products
+for each row execute function update_updated_at();

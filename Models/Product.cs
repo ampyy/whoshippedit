@@ -12,6 +12,7 @@ namespace whoshippedit.Models
         public string? Description { get; set; }
         public string? LogoUrl { get; set; }
         public string WebsiteUrl { get; set; } = string.Empty;
+        public string? DataSourceUrl { get; set; }
 
         // classification
         public Guid? CategoryId { get; set; }
@@ -50,6 +51,7 @@ namespace whoshippedit.Models
         public DateTime? ClaimedAt { get; set; }
         public DateTime? FeaturedUntil { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
 
         public int UpvoteCount { get; set; }
         public int CommentCount { get; set; }
