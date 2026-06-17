@@ -14,11 +14,11 @@ API_KEY = "tmrr_4ddf45eb4134f96ccadaa3cea594137b"
 BASE_URL = "https://trustmrr.com/api/v1"
 HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 RATE_LIMIT_INTERVAL = 3.0  # 3 seconds between details requests (20 requests/minute)
-LIMIT_STARTUPS = 50        # Limit to 50 startups for verification
-OUTPUT_SQL_FILE = "trustmrr_50_saas.sql"
+LIMIT_STARTUPS = 5        # Limit to 5 startups for verification
+OUTPUT_SQL_FILE = "trustmrr_5_saas.sql"
 
 # Cloudflare R2 Credentials
-R2_ACCOUNT_ID = "1793ba9684fc438a893cc5c062df259b"
+R2_ACCOUNT_ID = "4577d62d1819c60f155979837bea93dd"
 R2_ACCESS_KEY_ID = "ab99c1d5dc3e3838e43f7222fd38c9c3"
 R2_SECRET_ACCESS_KEY = "491a092d79b4f2358031d61be34e6dcaed54a3fde19c2c384b04d3d512824940"
 R2_BUCKET_NAME = "whoshippedit-logos"
@@ -40,6 +40,7 @@ try:
         aws_access_key_id=R2_ACCESS_KEY_ID,
         aws_secret_access_key=R2_SECRET_ACCESS_KEY,
         config=Config(signature_version="s3v4"),
+        region_name="auto"
     )
 except Exception as e:
     print(f"Error initializing R2 boto3 client: {e}")
@@ -327,9 +328,9 @@ def main():
         
         try:
             details_data = fetch_startup_details(slug)
-            startup = details_data.get("data", {})
+            startup = details_data.get("data") or {}
             
-            website = startup.get("website", "")
+            website = startup.get("website") or ""
             domain = clean_domain(website)
             if not domain:
                 print(f"  Skipping {slug} due to empty/invalid website: {website}")
@@ -341,7 +342,7 @@ def main():
             if not tagline:
                 tagline = name
                 
-            trustmrr_category = startup.get("category", "").lower().strip()
+            trustmrr_category = (startup.get("category") or "").lower().strip()
             mapped_slug = CATEGORY_MAPPING.get(trustmrr_category, "productivity")
             category_id = db_categories.get(mapped_slug)
             
@@ -388,7 +389,7 @@ def main():
             sql_web = escape_sql_string(website)
             sql_cat_id = f"'{category_id}'::uuid" if category_id else "NULL"
             sql_tags = format_sql_array([startup.get("category")] if startup.get("category") else None)
-            sql_country = escape_sql_value(startup.get("country", "")[:2])
+            sql_country = escape_sql_value((startup.get("country") or "")[:2])
             sql_f_name = escape_sql_value(founder_name)
             sql_f_tw = escape_sql_value(founder_twitter)
             sql_f_li = escape_sql_value(founder_linkedin)
