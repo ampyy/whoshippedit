@@ -91,7 +91,7 @@
         {
             @foreach(var cat in categories.Take(12))
             {
-                <a href="/?category=@cat.Slug" class="inline-block whitespace-nowrap px-6 py-2 rounded-full border border-default bg-surface hover:bg-hover hover:border-medium text-sm font-medium text-secondary hover:text-primary transition-colors shadow-sm">
+                <a href="/directory/category/@cat.Slug" class="inline-block whitespace-nowrap px-6 py-2 rounded-full border border-default bg-surface hover:bg-hover hover:border-medium text-sm font-medium text-secondary hover:text-primary transition-colors shadow-sm">
                     @cat.Name
                 </a>
             }
@@ -323,7 +323,7 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @foreach(var cat in categories.Take(8))
         {
-            <a href="/directory?category=@cat.Slug" class="group flex flex-col bg-page border border-default hover:border-medium rounded-xl overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5">
+            <a href="/directory/category/@cat.Slug" class="group flex flex-col bg-page border border-default hover:border-medium rounded-xl overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5">
                 <div class="h-24 w-full relative bg-surface border-b border-default overflow-hidden">
                     <img src="https://picsum.photos/seed/cat-@(cat.Slug)/300/200" alt="@cat.Name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                     <!-- gradient overlay -->

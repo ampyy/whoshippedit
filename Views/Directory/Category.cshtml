@@ -1,13 +1,12 @@
 @model List<whoshippedit.Models.Product>
 @{
-    ViewData["Title"] = "Directory — SaaS Products";
-
-    var categories   = ViewBag.Categories as List<whoshippedit.Models.Category> ?? new List<whoshippedit.Models.Category>();
+    var category     = ViewBag.Category as whoshippedit.Models.Category;
     var totalCount   = (int)(ViewBag.TotalCount ?? 0);
     var selectedSort = (string)(ViewBag.SelectedSort ?? "latest");
-    var selectedCategory = (string)(ViewBag.SelectedCategory ?? "");
     var selectedMrr      = (string)(ViewBag.SelectedMrr ?? "");
     var selectedCountry  = (string)(ViewBag.SelectedCountry ?? "");
+
+    ViewData["Title"] = $"{category?.Name ?? "Category"} — SaaS Products";
 
     static (string Label, string Css) MrrBadge(int? mrr)
     {
@@ -40,40 +39,49 @@
         {"ZA", "South Africa"}, {"EG", "Egypt"}, {"BR", "Brazil"}, {"MX", "Mexico"},
         {"AR", "Argentina"}
     };
+
+    var categorySlug = category?.Slug ?? "";
 }
 
-<!-- Directory Section (Without Hero) -->
+<!-- Category Page -->
 <div class="w-full max-w-[1100px] mx-auto px-0 md:px-6 mt-12 mb-16 flex flex-col">
-    
-    <!-- Header for Directory Page -->
-    <div class="mb-8 px-4 md:px-0">
-        <h1 class="text-3xl font-medium text-primary tracking-tight">Directory</h1>
-        <p class="text-secondary mt-2">Explore @totalCount.ToString("N0")+ verified SaaS products.</p>
+
+    <!-- Breadcrumb -->
+    <div class="mb-6 px-4 md:px-0 flex items-center gap-2 text-13 text-secondary">
+        <a href="/directory" class="hover:text-primary transition-colors">Directory</a>
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        <span class="text-primary font-medium">@category?.Name</span>
     </div>
 
-    <!-- Unified Table Container (Search + List) -->
+    <!-- Header -->
+    <div class="mb-8 px-4 md:px-0">
+        <div class="flex items-center gap-3 mb-2">
+            <h1 class="text-3xl font-medium text-primary tracking-tight">@category?.Name</h1>
+        </div>
+        @if (!string.IsNullOrEmpty(category?.Description))
+        {
+            <p class="text-secondary mt-1">@category.Description</p>
+        }
+        <p class="text-secondary mt-1">@totalCount.ToString("N0") products in this category.</p>
+    </div>
+
+    <!-- Unified Table Container -->
     <div class="flex flex-col bg-surface border-y md:border md:border-medium rounded-none shadow-sm w-full">
-        
+
         <!-- Search & Filter Header -->
-        <form method="get" action="/directory" id="dir-filter-form">
+        <form method="get" action="/directory/category/@categorySlug" id="cat-filter-form">
         <div class="p-4 border-b border-medium flex flex-col gap-4 animate-slide-down" style="opacity: 0;">
+
             <!-- Search Input -->
             <div class="relative w-full h-10">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input id="dir-search" name="search" type="text" value="@ViewBag.Search" placeholder="Search @(totalCount.ToString("N0"))+ products..." class="w-full h-full bg-surface border border-default rounded-lg pl-9 pr-4 text-sm text-primary placeholder-tertiary focus:outline-none focus:border-medium transition-colors" />
+                <input id="cat-search" name="search" type="text" value="@ViewBag.Search" placeholder="Search @(totalCount.ToString("N0")) products in @(category?.Name ?? "this category")..." class="w-full h-full bg-surface border border-default rounded-lg pl-9 pr-4 text-sm text-primary placeholder-tertiary focus:outline-none focus:border-medium transition-colors" />
             </div>
 
             <!-- Filters -->
-            <div class="flex overflow-x-auto hide-scrollbar gap-2 md:grid md:grid-cols-4 w-full">
-                <select name="category" onchange="var v=this.value; if(v){window.location='/directory/category/'+v;}else{document.getElementById('dir-filter-form').submit();}" class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer relative transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
-                    <option value="">Category</option>
-                    @foreach (var cat in categories)
-                    {
-                        <option value="@cat.Slug">@cat.Name</option>
-                    }
-                </select>
-                
-                <select name="mrr" onchange="document.getElementById('dir-filter-form').submit()" class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
+            <div class="flex overflow-x-auto hide-scrollbar gap-2 md:grid md:grid-cols-3 w-full">
+
+                <select name="mrr" onchange="document.getElementById('cat-filter-form').submit()" class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
                     <option value="">Revenue</option>
                     @if (selectedMrr == "0") { <option value="0" selected>Idea (no MRR)</option> } else { <option value="0">Idea (no MRR)</option> }
                     @if (selectedMrr == "1k") { <option value="1k" selected>$0–$1k MRR</option> } else { <option value="1k">$0–$1k MRR</option> }
@@ -83,7 +91,7 @@
                     @if (selectedMrr == "big") { <option value="big" selected>$1M+ MRR</option> } else { <option value="big">$1M+ MRR</option> }
                 </select>
 
-                <select name="country" onchange="document.getElementById('dir-filter-form').submit()" class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
+                <select name="country" onchange="document.getElementById('cat-filter-form').submit()" class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
                     <option value="">Country</option>
                     @foreach (var c in countries)
                     {
@@ -98,7 +106,7 @@
                     }
                 </select>
 
-                <select name="sort" onchange="document.getElementById('dir-filter-form').submit()" class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
+                <select name="sort" onchange="document.getElementById('cat-filter-form').submit()" class="h-10 bg-surface border border-default hover:border-medium rounded-lg px-3 text-13 text-primary focus:outline-none appearance-none pr-8 cursor-pointer transition-colors w-auto shrink-0 min-w-[130px] md:min-w-0 md:w-full" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22></polyline></svg>'); background-repeat: no-repeat; background-position: right 12px center;">
                     @if (selectedSort == "latest") { <option value="latest" selected>Sort: Latest</option> } else { <option value="latest">Sort: Latest</option> }
                     @if (selectedSort == "trending") { <option value="trending" selected>Trending</option> } else { <option value="trending">Trending</option> }
                     @if (selectedSort == "mrr") { <option value="mrr" selected>Highest MRR</option> } else { <option value="mrr">Highest MRR</option> }
@@ -111,9 +119,9 @@
             <div class="flex items-center justify-between pt-3 border-t border-default mt-1">
                 <div class="flex items-center gap-3 px-1">
                     <span id="results-summary" class="text-13 text-primary font-medium">Showing @Model.Count of @totalCount.ToString("N0") products</span>
-                    @if (!string.IsNullOrEmpty(selectedCategory) || !string.IsNullOrEmpty(selectedMrr) || !string.IsNullOrEmpty(selectedCountry) || !string.IsNullOrEmpty(ViewBag.Search as string))
+                    @if (!string.IsNullOrEmpty(selectedMrr) || !string.IsNullOrEmpty(selectedCountry) || !string.IsNullOrEmpty(ViewBag.Search as string))
                     {
-                        <a href="/directory" class="text-12 text-secondary hover:text-primary transition-colors flex items-center gap-1 font-medium">
+                        <a href="/directory/category/@categorySlug" class="text-12 text-secondary hover:text-primary transition-colors flex items-center gap-1 font-medium">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             Clear filters
                         </a>
@@ -125,7 +133,7 @@
         </form>
 
         <!-- Product List -->
-        <div class="flex flex-col" id="dir-product-list">
+        <div class="flex flex-col" id="cat-product-list">
             @if (Model.Count == 0)
             {
                 <div class="flex flex-col items-center justify-center py-20 text-center border-b border-default">
@@ -142,7 +150,7 @@
                     var buildPct = WouldBuildPct(prod.WouldBuildYes, prod.WouldBuildNo);
                     var initial  = string.IsNullOrEmpty(prod.Name) ? "?" : prod.Name.Substring(0, 1).ToUpper();
                     <a href="/directory/tool/@prod.Slug" class="group flex items-start gap-3.5 px-4 md:px-5 py-4 md:py-3 border-b border-medium last:border-b-0 hover:bg-hover transition-colors cursor-pointer animate-fade-up" style="opacity:0; animation-delay: @(Math.Min(Model.IndexOf(prod), 15) * 30)ms;">
-                    
+
                     <!-- Logo -->
                     <div class="w-8 h-8 md:w-9 md:h-9 shrink-0 bg-subtle border border-medium rounded-md flex items-center justify-center text-base md:text-lg font-medium text-primary mt-0.5 overflow-hidden">
                         @if (!string.IsNullOrEmpty(prod.LogoUrl))
@@ -157,11 +165,11 @@
 
                     <!-- Info Column -->
                     <div class="flex flex-col flex-1 min-w-0">
-                        
+
                         <!-- 1. Name & Badges Row -->
                         <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
                             <h3 class="text-base md:text-[15px] font-semibold text-primary truncate mr-1">@prod.Name</h3>
-                            
+
                             @if (prod.IsVerified)
                             {
                                 <span class="inline-flex items-center gap-1 px-1.5 py-[1px] rounded bg-verified-bg text-verified-text border border-verified-border text-10 uppercase font-semibold tracking-wide">
@@ -169,22 +177,15 @@
                                     Verified
                                 </span>
                             }
-                            
+
                             <span class="px-1.5 py-[1px] rounded border text-10 uppercase font-semibold tracking-wide @mrrCss">
                                 @mrrLabel
                             </span>
-
-                            @if (!string.IsNullOrEmpty(prod.CategoryName))
-                            {
-                                <span class="px-1.5 py-[1px] rounded bg-subtle text-secondary border border-default text-10 uppercase font-semibold tracking-wide">
-                                    @prod.CategoryName
-                                </span>
-                            }
                         </div>
 
                         <!-- 2. Description -->
                         <p class="text-13 md:text-14 text-primary/80 line-clamp-1 md:line-clamp-2 leading-snug mb-1.5 max-w-[800px]">@(prod.Description ?? prod.Tagline)</p>
-                        
+
                         <!-- 3. Metadata & Metrics Row -->
                         <div class="flex flex-wrap items-center justify-between gap-2 mt-auto">
                             <div class="text-11 md:text-12 text-tertiary font-medium">
@@ -193,7 +194,7 @@
                                     <span>by @prod.FounderName</span>
                                 }
                             </div>
-                            
+
                             <div class="flex items-center gap-2 text-11 md:text-12 text-tertiary font-medium">
                                 @if (prod.WouldBuildYes + prod.WouldBuildNo > 0)
                                 {
@@ -237,11 +238,9 @@
 </div>
 
 <style>
-    /* Hide scrollbar for mobile filters */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Directory Page Entrance Animations */
     @@keyframes slideDown {
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -256,7 +255,6 @@
     .animate-fade-up {
         animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-
     @@keyframes spin {
         to { transform: rotate(360deg); }
     }
@@ -268,16 +266,16 @@
 @section Scripts {
 <script>
 (function () {
-    // Read current filter state from the form
-    const form = document.getElementById('dir-filter-form');
-    const list = document.getElementById('dir-product-list');
+    const categorySlug = '@categorySlug';
+    const form = document.getElementById('cat-filter-form');
+    const list = document.getElementById('cat-product-list');
     const sentinel = document.getElementById('scroll-sentinel');
     const spinner = document.getElementById('load-more-spinner');
     const loadMoreBtn = document.getElementById('load-more-btn');
     const allLoaded = document.getElementById('all-loaded');
     const resultsSummary = document.getElementById('results-summary');
 
-    let currentPage = 1;        // page 1 was SSR rendered (100 items)
+    let currentPage = 1;
     let loading = false;
     let hasMore = @(totalCount > Model.Count ? "true" : "false");
     let shownCount = @Model.Count;
@@ -318,9 +316,6 @@
                  <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                  Verified</span>`
             : '';
-        const catBadge = p.categoryName
-            ? `<span class="px-1.5 py-[1px] rounded bg-subtle text-secondary border border-default text-10 uppercase font-semibold tracking-wide">${p.categoryName}</span>`
-            : '';
         const founderHtml = p.founderName ? `<span>by ${p.founderName}</span>` : '';
         const buildHtml = (p.wouldBuildYes + p.wouldBuildNo) > 0
             ? `<span>${pct}% would build</span><span class="text-border-medium">•</span>`
@@ -335,7 +330,6 @@
       <h3 class="text-base md:text-[15px] font-semibold text-primary truncate mr-1">${p.name}</h3>
       ${verifiedBadge}
       <span class="px-1.5 py-[1px] rounded border text-10 uppercase font-semibold tracking-wide ${css}">${label}</span>
-      ${catBadge}
     </div>
     <p class="text-13 md:text-14 text-primary/80 line-clamp-2 leading-snug mb-1.5 max-w-[800px]">${desc}</p>
     <div class="flex flex-wrap items-center justify-between gap-2 mt-auto">
@@ -363,7 +357,7 @@
         params.set('page', currentPage);
 
         try {
-            const res = await fetch(`/directory/products?${params.toString()}`);
+            const res = await fetch(`/directory/category/${categorySlug}/products?${params.toString()}`);
             const data = await res.json();
 
             data.items.forEach(p => {
@@ -391,7 +385,6 @@
         }
     }
 
-    // Intersection Observer for auto-load when near bottom
     if ('IntersectionObserver' in window && sentinel) {
         const io = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && hasMore && !loading) {
@@ -401,13 +394,11 @@
         io.observe(sentinel);
     }
 
-    // Manual load more button click
     if (loadMoreBtn) {
         loadMoreBtn.addEventListener('click', loadMore);
     }
 
-    // Search on Enter key
-    document.getElementById('dir-search')?.addEventListener('keydown', function(e) {
+    document.getElementById('cat-search')?.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') form.submit();
     });
 })();

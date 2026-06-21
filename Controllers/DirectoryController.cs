@@ -51,6 +51,86 @@ namespace whoshippedit.Controllers
             return View(products);
         }
 
+        [Route("directory/category/{slug}")]
+        public async Task<IActionResult> Category(
+            string slug,
+            string? mrr = null,
+            string? country = null,
+            string? sort = null,
+            string? search = null)
+        {
+            var categories = await _categoryService.GetCategoriesAsync();
+            var category = categories.FirstOrDefault(c => c.Slug == slug);
+            if (category == null)
+                return NotFound();
+
+            var (products, totalCount) = await _productService.GetProductsAsync(
+                search: search,
+                categorySlug: slug,
+                mrr: mrr,
+                country: country,
+                sort: sort,
+                page: 1,
+                pageSize: 100);
+
+            ViewBag.Category = category;
+            ViewBag.Categories = categories.ToList();
+            ViewBag.TotalCount = totalCount;
+            ViewBag.Search = search;
+            ViewBag.SelectedMrr = mrr;
+            ViewBag.SelectedCountry = country;
+            ViewBag.SelectedSort = sort ?? "latest";
+
+            return View(products);
+        }
+
+        [HttpGet("directory/category/{slug}/products")]
+        public async Task<IActionResult> GetCategoryProducts(
+            string slug,
+            string? mrr = null,
+            string? country = null,
+            string? sort = null,
+            string? search = null,
+            int page = 1)
+        {
+            const int pageSize = 50;
+
+            var (products, totalCount) = await _productService.GetProductsAsync(
+                search: search,
+                categorySlug: slug,
+                mrr: mrr,
+                country: country,
+                sort: sort,
+                page: page,
+                pageSize: pageSize);
+
+            var items = products.Select(p => new
+            {
+                id          = p.Id,
+                slug        = p.Slug,
+                name        = p.Name,
+                tagline     = p.Tagline,
+                description = p.Description,
+                logoUrl     = p.LogoUrl,
+                founderName = p.FounderName,
+                categoryName = p.CategoryName,
+                isVerified  = p.IsVerified,
+                mrr         = p.Mrr,
+                upvoteCount = p.UpvoteCount,
+                wouldBuildYes = p.WouldBuildYes,
+                wouldBuildNo  = p.WouldBuildNo,
+            });
+
+            return Json(new
+            {
+                items,
+                totalCount,
+                page,
+                pageSize,
+                hasMore = (page * pageSize) < totalCount
+            });
+        }
+
         /// <summary>
         /// AJAX endpoint for infinite scroll. Returns JSON array of product card HTML.
         /// GET /directory/products?page=2&search=...&category=...&mrr=...&country=...&sort=...
