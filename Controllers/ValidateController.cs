@@ -32,6 +32,11 @@ public class ValidateController : Controller
         var ideasList = await _ideaService.GetIdeasWithVotesAsync(AppConstants.Status.Approved);
         var ideas = ideasList.ToList();
 
+        // Calculate global statistics from ALL approved ideas (unfiltered)
+        ViewBag.TotalIdeas = ideas.Count;
+        ViewBag.AverageDemand = ideas.Any() ? (int)(ideas.Average(x => x.DemandPercentage) * 100) : 0;
+        ViewBag.TotalBuilding = ideas.Sum(x => x.BuildingCount);
+
         // Apply filters
         if (!string.IsNullOrEmpty(category))
         {
@@ -45,18 +50,14 @@ public class ValidateController : Controller
             ideas = ideas.Where(x => x.BuildingCount >= 1).ToList();
 
         // Apply sort
-        if (sort == "hottest")
+        if (sort == "newest" || status == "newest")
+            ideas = ideas.OrderByDescending(x => x.CreatedAt).ToList();
+        else if (sort == "hottest")
             ideas = ideas.OrderByDescending(x => x.HotScore).ToList();
         else if (sort == "most_would_pay")
             ideas = ideas.OrderByDescending(x => x.DemandPercentage).ThenByDescending(x => x.TotalVotes).ToList();
-        else if (sort == "newest")
-            ideas = ideas.OrderByDescending(x => x.CreatedAt).ToList();
         else if (sort == "most_commented")
             ideas = ideas.OrderByDescending(x => x.CommentCount).ToList();
-
-        ViewBag.TotalIdeas = ideas.Count;
-        ViewBag.AverageDemand = ideas.Any() ? (int)(ideas.Average(x => x.DemandPercentage) * 100) : 0;
-        ViewBag.TotalBuilding = ideas.Sum(x => x.BuildingCount);
 
         return View(ideas);
     }

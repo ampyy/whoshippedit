@@ -350,8 +350,9 @@ def main():
             if not isinstance(revenue, dict):
                 revenue = {}
             mrr_cents = revenue.get("mrr", 0) or 0
+            total_cents = revenue.get("total", 0) or 0
             mrr = int(round(mrr_cents / 100.0)) if mrr_cents else 0
-            arr = mrr * 12
+            arr = int(round(total_cents / 100.0)) if total_cents else 0
             
             founder_name = startup.get("founderName") or startup.get("founder_name")
             founder_twitter = startup.get("xHandle")

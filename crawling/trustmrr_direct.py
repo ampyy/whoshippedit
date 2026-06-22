@@ -98,10 +98,14 @@ def clean_domain(url: str) -> str:
 
 def load_connection_string() -> str:
     """Load connection string from appsettings.Development.json"""
-    path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "appsettings.Development.json"))
-    with open(path, "r") as f:
-        config = json.load(f)
-    return config["ConnectionStrings"]["DefaultConnection"]
+    path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "whoshippedit", "appsettings.Development.json"))
+    if not os.path.exists(path):
+        path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "appsettings.Development.json"))
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            config = json.load(f)
+        return config["ConnectionStrings"]["DefaultConnection"]
+    return "postgresql://neondb_owner:npg_lhyJ69BAnvRZ@ep-lively-lab-aqwysz14-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 def get_existing_data(conn) -> tuple:
     """Get set of existing slugs and domains in the database"""
@@ -169,7 +173,8 @@ def main():
         new_saas_startups = []
         page = 1
         has_more = True
-        target_count = 300
+        # Change this number to limit how many new startups you want to import from TrustMRR
+        target_count = 10
         
         logger.info("Scanning TrustMRR API for new SaaS startups...")
         while has_more and len(new_saas_startups) < target_count:
@@ -251,8 +256,9 @@ def main():
                 if not isinstance(revenue, dict):
                     revenue = {}
                 mrr_cents = revenue.get("mrr", 0) or 0
+                total_cents = revenue.get("total", 0) or 0
                 mrr = int(round(mrr_cents / 100.0)) if mrr_cents else 0
-                arr = mrr * 12
+                arr = int(round(total_cents / 100.0)) if total_cents else 0
                 
                 # Founder info
                 founder_name = startup.get("founderName") or startup.get("founder_name")
@@ -301,7 +307,7 @@ def main():
                         category_id,
                         [startup.get("category")] if startup.get("category") else None,
                         founded_year,
-                        startup.get("country", "")[:2],
+                        (startup.get("country") or "")[:2],
                         founder_name,
                         founder_twitter,
                         founder_linkedin,

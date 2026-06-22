@@ -18,10 +18,10 @@ public class IdeaRepository : IIdeaRepository
         var sql = @"
             SELECT 
                 i.*,
-                COALESCE(SUM(CASE WHEN v.vote = '0' THEN 1 ELSE 0 END), 0) as VoteYes,
-                COALESCE(SUM(CASE WHEN v.vote = '1' THEN 1 ELSE 0 END), 0) as VoteMaybe,
-                COALESCE(SUM(CASE WHEN v.vote = '2' THEN 1 ELSE 0 END), 0) as VoteNo,
-                COALESCE(SUM(CASE WHEN v.vote = '3' THEN 1 ELSE 0 END), 0) as BuildingCount,
+                COALESCE(SUM(CASE WHEN v.vote = 0 THEN 1 ELSE 0 END), 0) as VoteYes,
+                COALESCE(SUM(CASE WHEN v.vote = 1 THEN 1 ELSE 0 END), 0) as VoteMaybe,
+                COALESCE(SUM(CASE WHEN v.vote = 2 THEN 1 ELSE 0 END), 0) as VoteNo,
+                COALESCE(SUM(CASE WHEN v.vote = 3 THEN 1 ELSE 0 END), 0) as BuildingCount,
                 COUNT(v.id) as TotalVotes,
                 COALESCE(u.name, split_part(u.email, '@', 1), 'Anonymous') as FounderName
             FROM ideas i
